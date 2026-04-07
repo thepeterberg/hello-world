@@ -58,16 +58,31 @@ def load_config(path: str | None) -> dict:
 async def stream_track(server: RadioServer, audio_url: str, bitrate: str) -> bool:
     """Stream a single track through ffmpeg to all connected listeners.
 
-    Returns True if the track was streamed successfully.
+    Returns True if the track completed naturally, False on error.
+    Raises asyncio.CancelledError if skipped.
     """
     proc = await transcode_to_mp3_stream(audio_url, bitrate=bitrate)
 
     try:
         while True:
-            chunk = await proc.stdout.read(8192)
+            # Check for skip request
+            if server.skip_event.is_set():
+                server.skip_event.clear()
+                logger.info("Track skipped")
+                proc.kill()
+                await proc.wait()
+                raise asyncio.CancelledError("skipped")
+
+            # Read with a short timeout so we can check skip_event periodically
+            try:
+                chunk = await asyncio.wait_for(proc.stdout.read(8192), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
             if not chunk:
                 break
             await server.push_audio(chunk)
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         logger.warning("Error streaming track: %s", e)
         proc.kill()
@@ -122,12 +137,17 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
 
             server.set_now_playing(display)
 
-            success = await stream_track(server, audio_url, bitrate)
-            if success and silence:
-                await server.push_audio(silence)
-
-            if not success:
-                logger.warning("Track failed to stream: %s", display)
+            try:
+                success = await stream_track(server, audio_url, bitrate)
+                if success and silence:
+                    await server.push_audio(silence)
+                if not success:
+                    logger.warning("Track failed to stream: %s", display)
+            except asyncio.CancelledError:
+                # Track was skipped — move to the next one
+                if silence:
+                    await server.push_audio(silence)
+                continue
 
         logger.info("Playlist complete, reshuffling...")
 

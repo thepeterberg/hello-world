@@ -34,10 +34,13 @@ class RadioServer:
         self._listeners: list[asyncio.Queue] = []
         self._now_playing: str = "Poolsuite FM"
         self._running = False
+        self._skip_event: asyncio.Event = asyncio.Event()
         self._app = web.Application()
         self._app.router.add_get("/stream", self._handle_stream)
         self._app.router.add_get("/stream.mp3", self._handle_stream)
         self._app.router.add_get("/status", self._handle_status)
+        self._app.router.add_post("/skip", self._handle_skip)
+        self._app.router.add_get("/skip", self._handle_skip)
         self._app.router.add_get("/", self._handle_index)
         self._started_at = time.time()
         self._tracks_played = 0
@@ -144,6 +147,21 @@ class RadioServer:
 
         return response
 
+    @property
+    def skip_event(self) -> asyncio.Event:
+        """Event that is set when a skip is requested. The playback loop
+        should check/await this and clear it after advancing."""
+        return self._skip_event
+
+    async def _handle_skip(self, request: web.Request) -> web.Response:
+        """Handle a skip request — advance to the next track."""
+        logger.info("Skip requested")
+        self._skip_event.set()
+        # If request accepts HTML (browser), redirect back to web UI
+        if "text/html" in request.headers.get("Accept", ""):
+            raise web.HTTPFound("/")
+        return web.json_response({"status": "skipping", "was_playing": self._now_playing})
+
     async def _handle_status(self, request: web.Request) -> web.Response:
         """Return JSON status of the radio server."""
         return web.json_response({
@@ -170,6 +188,9 @@ class RadioServer:
   <p>Status API: <a href="/status" style="color: #64dfdf;">/status</a></p>
   <hr>
   <p>Add <code>{self.stream_url}</code> as a Live Radio station in Roon.</p>
+  <div style="margin: 1.5em 0;">
+    <a href="/skip" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em; border: none; cursor: pointer;">Skip Track &raquo;</a>
+  </div>
   <audio controls src="/stream" style="width: 100%; margin-top: 1em;">
     Your browser does not support the audio element.
   </audio>
