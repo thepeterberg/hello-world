@@ -29,19 +29,22 @@ async def fetch_playlists() -> list[dict]:
         resp.raise_for_status()
         data = resp.json()
 
-    # The API returns either a list of playlists or an object with a key
-    if isinstance(data, list):
-        playlists = data
-    elif isinstance(data, dict):
-        # Try common wrapper keys
-        for key in ("playlists", "data", "results"):
-            if key in data:
+    # The API wraps playlists in a response envelope:
+    # { "status_code": 200, "summary_message": "...", "payload": [...] }
+    if isinstance(data, dict):
+        # Try known wrapper keys in order of likelihood
+        for key in ("payload", "playlists", "data", "results"):
+            if key in data and isinstance(data[key], list):
                 playlists = data[key]
                 break
         else:
             playlists = [data]
+    elif isinstance(data, list):
+        playlists = data
     else:
         playlists = []
+
+    logger.debug("Raw API response keys: %s", list(data.keys()) if isinstance(data, dict) else type(data))
 
     logger.info("Fetched %d playlists from Poolsuite API", len(playlists))
     return playlists
@@ -65,10 +68,21 @@ def extract_tracks(playlists: list[dict], playlist_filter: str | None = None) ->
         if playlist_filter and playlist_filter.lower() not in name.lower():
             continue
 
-        playlist_tracks = playlist.get("tracks") or playlist.get("songs") or []
+        # The API uses "tracks_in_order" for the track list
+        playlist_tracks = (
+            playlist.get("tracks_in_order")
+            or playlist.get("tracks")
+            or playlist.get("songs")
+            or []
+        )
         for track in playlist_tracks:
-            # Normalize: ensure we have a track_id
-            tid = track.get("track_id") or track.get("id") or track.get("sc_id")
+            # The API uses "soundcloud_id" as the track identifier
+            tid = (
+                track.get("soundcloud_id")
+                or track.get("track_id")
+                or track.get("id")
+                or track.get("sc_id")
+            )
             if tid:
                 track["track_id"] = str(tid)
                 track["_playlist"] = name
