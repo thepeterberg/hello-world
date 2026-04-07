@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """Poolsuite → Roon Bridge
 
 Streams curated Poolsuite FM tracks as a local internet radio station

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Audio pipeline: resolve SoundCloud tracks and transcode to a continuous MP3 stream.
 
 Uses yt-dlp to resolve SoundCloud URLs to direct audio streams,

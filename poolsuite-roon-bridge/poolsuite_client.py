@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Client for the Poolsuite (formerly Poolside FM) API.
 
 Fetches curated playlists and track metadata from the Poolsuite
