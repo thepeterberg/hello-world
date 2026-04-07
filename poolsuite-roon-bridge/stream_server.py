@@ -68,10 +68,24 @@ class RadioServer:
         # No-op for continuous stream; tracks blend together
         pass
 
+    @staticmethod
+    def _build_icy_metadata(title: str) -> bytes:
+        """Build an ICY metadata block for the given title.
+
+        ICY format: 1 byte length prefix (actual length / 16, rounded up),
+        followed by the metadata string padded with null bytes to a multiple of 16.
+        """
+        text = f"StreamTitle='{title}';".encode("utf-8")
+        # Length byte = ceil(len(text) / 16)
+        length = (len(text) + 15) // 16
+        # Pad to length * 16 bytes
+        padded = text.ljust(length * 16, b"\x00")
+        return bytes([length]) + padded
+
     async def _handle_stream(self, request: web.Request) -> web.StreamResponse:
         """Handle a listener connecting to the MP3 stream."""
         # Check if client supports ICY metadata
-        icy_requested = "icy-metadata" in request.headers.get("Icy-MetaData", "")
+        icy_requested = request.headers.get("Icy-MetaData", "") == "1"
 
         response = web.StreamResponse(
             status=200,
@@ -94,12 +108,33 @@ class RadioServer:
         queue: asyncio.Queue = asyncio.Queue(maxsize=256)
         self._listeners.append(queue)
         peer = request.remote
-        logger.info("Listener connected: %s (total: %d)", peer, len(self._listeners))
+        logger.info("Listener connected: %s (icy=%s, total: %d)", peer, icy_requested, len(self._listeners))
 
         try:
-            while True:
-                chunk = await queue.get()
-                await response.write(chunk)
+            if not icy_requested:
+                # Simple path: no metadata injection needed
+                while True:
+                    chunk = await queue.get()
+                    await response.write(chunk)
+            else:
+                # ICY path: inject metadata every ICY_METAINT bytes
+                bytes_since_meta = 0
+                while True:
+                    chunk = await queue.get()
+                    pos = 0
+                    while pos < len(chunk):
+                        # How many bytes until next metadata insertion?
+                        remaining = ICY_METAINT - bytes_since_meta
+                        to_send = min(remaining, len(chunk) - pos)
+                        await response.write(chunk[pos:pos + to_send])
+                        bytes_since_meta += to_send
+                        pos += to_send
+
+                        if bytes_since_meta >= ICY_METAINT:
+                            # Insert ICY metadata block
+                            meta = self._build_icy_metadata(self._now_playing)
+                            await response.write(meta)
+                            bytes_since_meta = 0
         except (ConnectionResetError, ConnectionAbortedError, asyncio.CancelledError):
             pass
         finally:
