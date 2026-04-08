@@ -45,19 +45,20 @@
     .np-meta { font-size: 0.8em; color: rgba(240,230,211,0.6); margin-top: 0.6em; font-family: 'Space Mono', monospace; }
 
     /* Transport */
-    .transport { display: flex; justify-content: center; gap: 0.8em; margin-bottom: 1.5em; }
+    .transport { display: flex; justify-content: center; align-items: center; gap: 1.2em; margin-bottom: 1.5em; }
     .t-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 48px; height: 48px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,255,255,0.15);
       border-radius: 50%;
       color: #f0e6d3;
       text-decoration: none;
-      font-size: 1.2em;
       transition: all 0.15s;
     }
-    .t-btn:hover { background: rgba(255,215,0,0.2); border-color: rgba(255,215,0,0.4); color: #ffd700; }
+    .t-btn:hover { background: rgba(255,215,0,0.2); border-color: rgba(255,215,0,0.4); color: #ffd700; }}
+    .t-btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .t-label { font-family: 'Space Mono', monospace; font-size: 0.7em; color: rgba(240,230,211,0.5); text-transform: uppercase; letter-spacing: 0.1em; }
 
     /* Section */
     .section { margin-bottom: 1.5em; }
@@ -70,21 +71,86 @@
       margin-bottom: 0.8em;
     }
 
-    /* Channels */
-    .channels { display: flex; flex-wrap: wrap; gap: 0.4em; }
+    /* FM Radio Tuner */
+    .tuner {
+      background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.15) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 1.2em 1.5em;
+      position: relative;
+    }
+    .tuner-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65em;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(240,230,211,0.4);
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    .dial-track {
+      position: relative;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      margin: 1.2em 0;
+    }
+    .dial-track::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent);
+    }
+    .dial-notches {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 0.5em;
+      margin-bottom: 0.3em;
+    }
+    .dial-notch {
+      width: 1px;
+      height: 8px;
+      background: rgba(240,230,211,0.2);
+    }
+    .dial-glow {
+      position: absolute;
+      top: -4px;
+      width: 12px; height: 12px;
+      background: #ffd700;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 20px rgba(255,215,0,0.2);
+      transition: left 0.3s ease;
+    }
+    .channels {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5em;
+      margin-top: 1em;
+    }
     .ch-btn {
       font-family: 'Space Mono', monospace;
       font-size: 0.8em;
       padding: 0.5em 1em;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 20px;
-      color: rgba(240,230,211,0.85);
+      background: transparent;
+      border: none;
+      color: rgba(240,230,211,0.5);
       text-decoration: none;
       transition: all 0.15s;
+      position: relative;
     }
-    .ch-btn:hover { background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.3); color: #ffd700; }
-    .ch-active { background: rgba(255,215,0,0.2); border-color: #ffd700; color: #ffd700; }
+    .ch-btn:hover { color: #ffd700; }
+    .ch-active { color: #ffd700; font-weight: 700; }
+    .ch-active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 50%; transform: translateX(-50%);
+      width: 4px; height: 4px;
+      background: #ffd700;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(255,215,0,0.5);
+    }
 
     /* Audio player */
     audio { width: 100%; margin-top: 0.5em; border-radius: 8px; }
@@ -190,21 +256,47 @@
   </div>
 
   <div class="transport">
-    <a href="#" class="t-btn" title="Previous">&laquo;</a>
-    <a href="#" class="t-btn" title="Next">&raquo;</a>
+    <div style="text-align:center;">
+      <a href="#" class="t-btn" title="Previous">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" transform="scale(-1,1) translate(-24,0)"/></svg>
+      </a>
+      <div class="t-label">Prev</div>
+    </div>
+    <div style="text-align:center;">
+      <a href="#" class="t-btn" title="Next">
+        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </a>
+      <div class="t-label">Next</div>
+    </div>
   </div>
 
   <div class="section">
-    <div class="section-label">Channels</div>
-    <div class="channels">
-      <a href="#" class="ch-btn ch-active">All</a>
-      <a href="#" class="ch-btn">Poolsuite FM</a>
-      <a href="#" class="ch-btn">Indie</a>
-      <a href="#" class="ch-btn">Balearic</a>
-      <a href="#" class="ch-btn">Tokyo</a>
-      <a href="#" class="ch-btn">Friday</a>
-      <a href="#" class="ch-btn">Hangover</a>
-      <a href="#" class="ch-btn">Mixtapes</a>
+    <div class="tuner">
+      <div class="tuner-label">FM Channels</div>
+      <div class="channels">
+        <a href="#" class="ch-btn ch-active">All</a>
+        <a href="#" class="ch-btn">Poolsuite FM</a>
+        <a href="#" class="ch-btn">Indie</a>
+        <a href="#" class="ch-btn">Balearic</a>
+      </div>
+      <div class="dial-track">
+        <div class="dial-notches" style="position:absolute;top:-10px;left:0;right:0;">
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+          <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
+        </div>
+        <div class="dial-glow" style="left: 5%;"></div>
+      </div>
+      <div class="channels">
+        <a href="#" class="ch-btn">Tokyo</a>
+        <a href="#" class="ch-btn">Friday</a>
+        <a href="#" class="ch-btn">Hangover</a>
+        <a href="#" class="ch-btn">Mixtapes</a>
+      </div>
     </div>
   </div>
 
