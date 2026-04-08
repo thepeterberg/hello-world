@@ -80,10 +80,11 @@ class RadioServer:
     def stream_url(self) -> str:
         return f"http://{self.local_ip}:{self.port}/stream"
 
-    def set_now_playing(self, title: str) -> None:
+    def set_now_playing(self, title: str, soundcloud_url: str | None = None) -> None:
         self._now_playing = title
+        self._now_playing_url = soundcloud_url
         self._tracks_played += 1
-        self._history.insert(0, (title, time.time()))
+        self._history.insert(0, (title, time.time(), soundcloud_url))
         # Keep last 100 tracks
         self._history = self._history[:100]
         logger.info("Now playing: %s", title)
@@ -257,7 +258,9 @@ class RadioServer:
             return '<div class="history-empty">No tracks played yet</div>'
         now = time.time()
         rows = []
-        for i, (title, ts) in enumerate(self._history):
+        for i, entry in enumerate(self._history):
+            title, ts = entry[0], entry[1]
+            sc_url = entry[2] if len(entry) > 2 else None
             ago = int(now - ts)
             if ago < 60:
                 time_str = "just now" if ago < 10 else f"{ago}s ago"
@@ -272,10 +275,15 @@ class RadioServer:
                 display = f"<strong>{artist}</strong> &mdash; {track}"
             else:
                 display = f"<strong>{title}</strong>"
+            sc_badge = (
+                f' <a href="{sc_url}" target="_blank" class="sc-link" '
+                f'title="Open on SoundCloud">SC</a>'
+                if sc_url else ""
+            )
             rows.append(
                 f'<div class="history-row">'
                 f'<span class="track-num">{label}</span>'
-                f'<span class="track-title">{display}</span>'
+                f'<span class="track-title">{display}{sc_badge}</span>'
                 f'<span class="track-time">{time_str}</span>'
                 f'</div>'
             )
@@ -330,6 +338,8 @@ class RadioServer:
     .history-row .track-time {{ color: rgba(224,214,138,0.4); font-size: 0.8em; white-space: nowrap; }}
     .history-row .track-num {{ color: rgba(224,214,138,0.3); font-size: 0.75em; min-width: 1.5em; text-align: right; }}
     .history-empty {{ padding: 2em; text-align: center; color: rgba(224,214,138,0.3); }}
+    .sc-link {{ display: inline-block; background: #f50; color: #fff; font-size: 0.6em; padding: 0.2em 0.5em; border-radius: 3px; text-decoration: none; margin-left: 0.5em; vertical-align: middle; font-weight: bold; letter-spacing: 0.05em; }}
+    .sc-link:hover {{ background: #ff6a1a; }}
   </style>
   <script>
     function copyUrl(btn, url) {{
@@ -345,7 +355,7 @@ class RadioServer:
   <h1>Poolsuite &rarr; Roon</h1>
   <p class="subtitle">Local bridge &middot; {ip}</p>
 
-  <div class="now-playing">Now Playing: <strong>{self._now_playing}</strong></div>
+  <div class="now-playing">Now Playing: <strong>{self._now_playing}</strong>{f' <a href="{self._now_playing_url}" target="_blank" class="sc-link" title="Open on SoundCloud">SC</a>' if getattr(self, "_now_playing_url", None) else ""}</div>
   <p class="meta">Channel: {self._current_channel} &middot; {len(self._listeners)} listener{"s" if len(self._listeners) != 1 else ""} &middot; {self._tracks_played} tracks played</p>
 
   <div style="margin: 1.2em 0;">
@@ -356,6 +366,10 @@ class RadioServer:
   <hr>
   <p class="section-label">Channels</p>
   <div style="margin: 0.3em 0 1em 0;">{channel_buttons}</div>
+
+  <hr>
+  <p class="section-label">Listen in browser</p>
+  <audio controls src="/stream"></audio>
 
   <hr>
   <p class="section-label">Add to Roon &mdash; Live Radio</p>
@@ -388,10 +402,6 @@ class RadioServer:
     <span class="meta" style="white-space:nowrap;">Previous track</span>
     <button class="copy-btn" onclick="copyUrl(this, '{base}/prev')">Copy</button>
   </div>
-
-  <hr>
-  <p class="section-label">Listen in browser</p>
-  <audio controls src="/stream"></audio>
 
   <hr>
   <p class="section-label">Play History</p>

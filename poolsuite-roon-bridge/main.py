@@ -132,8 +132,8 @@ async def feed_silence_loop(
             pass
 
 
-async def resolve_track(track: dict) -> tuple[str, str | None]:
-    """Resolve a track dict to a (display_name, audio_url) tuple."""
+async def resolve_track(track: dict) -> tuple[str, str | None, str | None]:
+    """Resolve a track dict to a (display_name, audio_url, soundcloud_url) tuple."""
     track_id = track["track_id"]
     title = track.get("title") or track.get("name") or f"Track {track_id}"
     artist = track.get("artist") or track.get("user", {}).get("username") or "Unknown"
@@ -146,7 +146,7 @@ async def resolve_track(track: dict) -> tuple[str, str | None]:
 
     # Small delay to avoid SoundCloud rate limiting
     await asyncio.sleep(1)
-    return display, audio_url
+    return display, audio_url, sc_url
 
 
 async def encoder_output_loop(
@@ -259,10 +259,10 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
 
             # Use pre-resolved result if available, otherwise resolve now
             if next_resolved is not None:
-                display, audio_url = next_resolved
+                display, audio_url, sc_url = next_resolved
                 next_resolved = None
             else:
-                display, audio_url = await resolve_track(track)
+                display, audio_url, sc_url = await resolve_track(track)
 
             if not audio_url:
                 logger.warning("Skipping unresolvable track: %s", display)
@@ -278,7 +278,7 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
 
                 next_resolve_task = asyncio.create_task(_resolve_next())
 
-            server.set_now_playing(display)
+            server.set_now_playing(display, soundcloud_url=sc_url)
             history.append(track)
 
             # Feed the track to the encoder. Pass silence_feeder_stop so
