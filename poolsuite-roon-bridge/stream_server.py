@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """HTTP streaming server that serves a continuous MP3 stream.
 
 Listeners (including Roon) connect to /stream and receive a
