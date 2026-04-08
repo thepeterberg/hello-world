@@ -128,13 +128,14 @@ async def resolve_track(track: dict) -> tuple[str, str | None]:
     return display, audio_url
 
 
-async def keep_alive_silence(server: RadioServer, stop: asyncio.Event, bitrate: str) -> None:
-    """Push silence to keep the stream alive while resolving the next track."""
-    silence_chunk = await generate_silence(1.0, bitrate)
+async def keep_alive_silence(
+    server: RadioServer, stop: asyncio.Event, silence_chunk: bytes
+) -> None:
+    """Push pre-generated silence to keep the stream alive during transitions."""
     while not stop.is_set():
         await server.push_audio(silence_chunk)
         try:
-            await asyncio.wait_for(stop.wait(), timeout=1.0)
+            await asyncio.wait_for(stop.wait(), timeout=0.5)
         except asyncio.TimeoutError:
             pass
 
@@ -144,7 +145,9 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
     bitrate = config["bitrate"]
     shuffle = config["shuffle"]
     playlist_filter = config.get("playlist_filter")
+    # Pre-generate silence buffers once at startup — no ffmpeg delay during transitions
     silence = await generate_silence(config["crossfade_seconds"], bitrate)
+    keepalive_chunk = await generate_silence(0.5, bitrate)
 
     while True:
         # Fetch fresh playlist data each cycle
@@ -218,7 +221,7 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
             if silence_task and not silence_task.done():
                 silence_task.cancel()
             silence_task = asyncio.create_task(
-                keep_alive_silence(server, silence_stop, bitrate)
+                keep_alive_silence(server, silence_stop, keepalive_chunk)
             )
 
             # Wait for next track resolution if it's still in progress
