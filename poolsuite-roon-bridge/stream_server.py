@@ -272,18 +272,21 @@ class RadioServer:
             # Split "Artist - Title" if possible
             if " - " in title:
                 artist, track = title.split(" - ", 1)
-                display = f"<strong>{artist}</strong> &mdash; {track}"
+                text = f"<strong>{artist}</strong> &mdash; {track}"
             else:
-                display = f"<strong>{title}</strong>"
-            sc_badge = (
-                f' <a href="{sc_url}" target="_blank" class="sc-link" '
-                f'title="Open on SoundCloud">SC</a>'
-                if sc_url else ""
-            )
+                text = f"<strong>{title}</strong>"
+            if sc_url:
+                display = (
+                    f'<a href="{sc_url}" target="_blank" '
+                    f'style="color: #e0d68a; text-decoration: none; '
+                    f'border-bottom: 1px solid rgba(224,214,138,0.2);">{text}</a>'
+                )
+            else:
+                display = text
             rows.append(
                 f'<div class="history-row">'
                 f'<span class="track-num">{label}</span>'
-                f'<span class="track-title">{display}{sc_badge}</span>'
+                f'<span class="track-title">{display}</span>'
                 f'<span class="track-time">{time_str}</span>'
                 f'</div>'
             )
@@ -355,7 +358,7 @@ class RadioServer:
   <h1>Poolsuite &rarr; Roon</h1>
   <p class="subtitle">Local bridge &middot; {ip}</p>
 
-  <div class="now-playing">Now Playing: <strong>{self._now_playing}</strong>{f' <a href="{self._now_playing_url}" target="_blank" class="sc-link" title="Open on SoundCloud">SC</a>' if getattr(self, "_now_playing_url", None) else ""}</div>
+  <div class="now-playing">Now Playing: {f'<a href="{self._now_playing_url}" target="_blank" style="color: #e0d68a; text-decoration: none; border-bottom: 1px solid rgba(224,214,138,0.3);"><strong>{self._now_playing}</strong></a>' if getattr(self, "_now_playing_url", None) else f'<strong>{self._now_playing}</strong>'}</div>
   <p class="meta">Channel: {self._current_channel} &middot; {len(self._listeners)} listener{"s" if len(self._listeners) != 1 else ""} &middot; {self._tracks_played} tracks played</p>
 
   <div style="margin: 1.2em 0;">
