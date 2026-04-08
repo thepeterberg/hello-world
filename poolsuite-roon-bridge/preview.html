@@ -13,10 +13,10 @@
       color: #f0e6d3;
       min-height: 100vh;
     }
-    .container { max-width: 580px; margin: 0 auto; padding: 2em 1.5em; font-size: 1.05em; }
+    .container { max-width: 660px; margin: 0 auto; padding: 1.5em 1.5em; font-size: 1.05em; }
 
     /* Header */
-    .header { text-align: center; margin-bottom: 2em; }
+    .header { text-align: center; margin-bottom: 1.2em; }
     .logo { font-family: 'Space Mono', monospace; font-size: 0.8em; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,180,200,0.7); margin-bottom: 0.5em; }
     .title { font-family: 'Space Mono', monospace; font-size: 1.8em; font-weight: 700; background: linear-gradient(135deg, #ff6b9d, #ffa8cc, #c084fc, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
     .tagline { font-size: 0.85em; color: rgba(255,180,200,0.45); margin-top: 0.4em; font-family: 'Space Mono', monospace; }
@@ -34,17 +34,17 @@
         0 8px 32px rgba(0,0,0,0.4),
         0 2px 8px rgba(0,0,0,0.3);
       overflow: hidden;
-      margin-bottom: 1.5em;
+      margin-bottom: 1.2em;
     }
     .stereo-top {
       background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
-      padding: 1.2em 1.5em 0 1.5em;
+      padding: 1em 1.3em 0 1.3em;
     }
     .stereo-brand {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1em;
+      margin-bottom: 0.6em;
     }
     .stereo-brand-name {
       font-family: 'Space Mono', monospace;
@@ -167,7 +167,7 @@
       display: flex;
       justify-content: center;
       gap: 0.5em;
-      padding: 1em 1.5em;
+      padding: 0.6em 1.3em;
     }
     .t-btn {
       display: flex; align-items: center; gap: 0.5em;
@@ -194,7 +194,7 @@
 
     /* Dial section */
     .dial-section {
-      padding: 1em 1.5em 0.6em 1.5em;
+      padding: 0.7em 1.3em 0.4em 1.3em;
     }
     .dial-section-label {
       font-family: 'Space Mono', monospace;
@@ -271,7 +271,7 @@
     }
 
     /* Channel Buttons */
-    .ch-section { padding: 0 1.5em 1.3em 1.5em; }
+    .ch-section { padding: 0 1.3em 1em 1.3em; }
     .ch-grid {
       display: flex;
       flex-wrap: wrap;
@@ -304,7 +304,7 @@
     }
 
     /* Section */
-    .section { margin-bottom: 1.5em; }
+    .section { margin-bottom: 1em; }
     .section-label {
       font-family: 'Space Mono', monospace;
       font-size: 0.75em;
@@ -322,22 +322,24 @@
       display: flex; align-items: center;
       background: rgba(0,0,0,0.25);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      padding: 0.7em 1em;
-      gap: 0.8em;
-      margin-top: 0.5em;
+      border-radius: 6px;
+      padding: 0.45em 0.8em;
+      gap: 0.6em;
+      margin-top: 0.35em;
     }
-    .roon-box code { flex: 1; font-family: 'Space Mono', monospace; font-size: 0.85em; color: #67e8f9; word-break: break-all; }
-    .roon-box .label { font-size: 0.8em; color: rgba(240,230,211,0.55); white-space: nowrap; }
+    .roon-box code { flex: 1; font-family: 'Space Mono', monospace; font-size: 0.75em; color: #67e8f9; word-break: break-all; }
+    .roon-box .label { font-size: 0.7em; color: rgba(240,230,211,0.55); white-space: nowrap; }
+    .roon-box-lg { padding: 0.6em 1em; }
+    .roon-box-lg code { font-size: 0.85em; }
     .copy-btn {
       font-family: 'Space Mono', monospace;
       background: rgba(103,232,249,0.12);
       border: 1px solid rgba(103,232,249,0.3);
       color: #67e8f9;
-      padding: 0.4em 0.9em;
+      padding: 0.3em 0.7em;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.75em;
+      font-size: 0.7em;
       letter-spacing: 0.05em;
       transition: all 0.15s;
     }
@@ -345,7 +347,7 @@
     .copy-btn.copied { background: rgba(103,232,249,0.35); }
 
     /* Divider */
-    .divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 1.5em 0; }
+    .divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 1em 0; }
 
     /* History */
     .history {
@@ -359,9 +361,9 @@
     .history::-webkit-scrollbar-thumb { background: rgba(255,107,157,0.25); border-radius: 2px; }
     .history-row {
       display: flex; align-items: center;
-      padding: 0.7em 1em;
+      padding: 0.55em 0.8em;
       border-bottom: 1px solid rgba(255,255,255,0.04);
-      gap: 0.8em;
+      gap: 0.7em;
       transition: background 0.1s;
     }
     .history-row:hover { background: rgba(255,255,255,0.03); }
@@ -388,7 +390,7 @@
     .history-empty { padding: 2em; text-align: center; color: rgba(240,230,211,0.4); font-size: 0.9em; }
 
     /* Footer */
-    .footer { text-align: center; margin-top: 2em; font-size: 0.8em; color: rgba(240,230,211,0.3); font-family: 'Space Mono', monospace; }
+    .footer { text-align: center; margin-top: 1.2em; font-size: 0.8em; color: rgba(240,230,211,0.3); font-family: 'Space Mono', monospace; }
     .footer a { color: rgba(255,107,157,0.5); text-decoration: none; }
     .footer a:hover { color: #ff6b9d; }
   </style>
@@ -559,7 +561,7 @@
   <!-- Roon -->
   <div class="section">
     <div class="section-label">Add to Roon</div>
-    <div class="roon-box">
+    <div class="roon-box roon-box-lg">
       <code>http://192.168.1.100:8489/stream</code>
       <button class="copy-btn" onclick="copyUrl(this, 'http://192.168.1.100:8489/stream')">COPY</button>
     </div>
