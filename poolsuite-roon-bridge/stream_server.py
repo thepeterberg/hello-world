@@ -33,14 +33,19 @@ class RadioServer:
         self.port = port
         self._listeners: list[asyncio.Queue] = []
         self._now_playing: str = "Poolsuite FM"
+        self._current_channel: str = "All"
+        self._available_channels: list[str] = []
         self._running = False
         self._skip_event: asyncio.Event = asyncio.Event()
+        self._channel_change_event: asyncio.Event = asyncio.Event()
+        self._pending_channel: str | None = None
         self._app = web.Application()
         self._app.router.add_get("/stream", self._handle_stream)
         self._app.router.add_get("/stream.mp3", self._handle_stream)
         self._app.router.add_get("/status", self._handle_status)
         self._app.router.add_post("/skip", self._handle_skip)
         self._app.router.add_get("/skip", self._handle_skip)
+        self._app.router.add_get("/channel", self._handle_channel)
         self._app.router.add_get("/", self._handle_index)
         self._started_at = time.time()
         self._tracks_played = 0
@@ -153,14 +158,44 @@ class RadioServer:
         should check/await this and clear it after advancing."""
         return self._skip_event
 
+    @property
+    def channel_change_event(self) -> asyncio.Event:
+        """Event set when a channel change is requested."""
+        return self._channel_change_event
+
+    @property
+    def pending_channel(self) -> str | None:
+        """The channel name requested via the web UI, or None."""
+        return self._pending_channel
+
+    def set_available_channels(self, channels: list[str]) -> None:
+        self._available_channels = channels
+
+    def set_current_channel(self, name: str) -> None:
+        self._current_channel = name
+
     async def _handle_skip(self, request: web.Request) -> web.Response:
         """Handle a skip request — advance to the next track."""
         logger.info("Skip requested")
         self._skip_event.set()
-        # If request accepts HTML (browser), redirect back to web UI
         if "text/html" in request.headers.get("Accept", ""):
             raise web.HTTPFound("/")
         return web.json_response({"status": "skipping", "was_playing": self._now_playing})
+
+    async def _handle_channel(self, request: web.Request) -> web.Response:
+        """Handle a channel change request."""
+        name = request.query.get("name", "").strip()
+        if not name:
+            return web.json_response(
+                {"channels": self._available_channels, "current": self._current_channel}
+            )
+        logger.info("Channel change requested: %s", name)
+        self._pending_channel = name if name != "All" else None
+        self._channel_change_event.set()
+        self._skip_event.set()  # Also skip current track to switch faster
+        if "text/html" in request.headers.get("Accept", ""):
+            raise web.HTTPFound("/")
+        return web.json_response({"status": "switching", "channel": name})
 
     async def _handle_status(self, request: web.Request) -> web.Response:
         """Return JSON status of the radio server."""
@@ -175,22 +210,37 @@ class RadioServer:
 
     async def _handle_index(self, request: web.Request) -> web.Response:
         """Simple landing page."""
+        channel_buttons = ""
+        all_channels = ["All"] + self._available_channels
+        for ch in all_channels:
+            is_current = (ch == self._current_channel)
+            bg = "#64dfdf" if is_current else "#e0d68a"
+            color = "#1a1a2e"
+            border = "3px solid #64dfdf" if is_current else "3px solid transparent"
+            channel_buttons += (
+                f'<a href="/channel?name={ch}" style="display: inline-block; '
+                f'padding: 0.5em 1em; margin: 0.3em; background: {bg}; color: {color}; '
+                f'text-decoration: none; font-weight: bold; border: {border};">{ch}</a>\n'
+            )
+
         html = f"""<!DOCTYPE html>
 <html>
 <head><title>Poolsuite Roon Bridge</title></head>
 <body style="font-family: monospace; background: #1a1a2e; color: #e0d68a; padding: 2em;">
   <h1>🌴 Poolsuite → Roon Bridge</h1>
   <p>Now Playing: <strong>{self._now_playing}</strong></p>
-  <p>Listeners: {len(self._listeners)}</p>
-  <p>Tracks played: {self._tracks_played}</p>
+  <p>Channel: <strong>{self._current_channel}</strong></p>
+  <p>Listeners: {len(self._listeners)} | Tracks played: {self._tracks_played}</p>
+  <hr>
+  <h3>Channels</h3>
+  <div style="margin: 0.5em 0 1.5em 0;">{channel_buttons}</div>
+  <hr>
+  <div style="margin: 1em 0;">
+    <a href="/skip" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em;">Skip Track &raquo;</a>
+  </div>
   <hr>
   <p>Stream URL: <a href="/stream" style="color: #64dfdf;">{self.stream_url}</a></p>
-  <p>Status API: <a href="/status" style="color: #64dfdf;">/status</a></p>
-  <hr>
   <p>Add <code>{self.stream_url}</code> as a Live Radio station in Roon.</p>
-  <div style="margin: 1.5em 0;">
-    <a href="/skip" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em; border: none; cursor: pointer;">Skip Track &raquo;</a>
-  </div>
   <audio controls src="/stream" style="width: 100%; margin-top: 1em;">
     Your browser does not support the audio element.
   </audio>

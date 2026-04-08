@@ -78,17 +78,16 @@ async def stream_track(
 
     try:
         while True:
-            # Check for skip request
+            # Check for skip or channel change
             if server.skip_event.is_set():
                 server.skip_event.clear()
                 logger.info("Track skipped")
                 proc.kill()
-                await proc.wait()
                 raise asyncio.CancelledError("skipped")
 
-            # Read with a short timeout so we can check skip_event periodically
+            # Read with a short timeout so we can check events periodically
             try:
-                chunk = await asyncio.wait_for(proc.stdout.read(8192), timeout=1.0)
+                chunk = await asyncio.wait_for(proc.stdout.read(8192), timeout=0.25)
             except asyncio.TimeoutError:
                 continue
             if not chunk:
@@ -101,14 +100,14 @@ async def stream_track(
 
             await server.push_audio(chunk)
     except asyncio.CancelledError:
+        proc.kill()
         raise
     except Exception as e:
         logger.warning("Error streaming track: %s", e)
         proc.kill()
         return False
 
-    await proc.wait()
-    return proc.returncode == 0
+    return True
 
 
 async def resolve_track(track: dict) -> tuple[str, str | None]:
@@ -150,6 +149,14 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
     keepalive_chunk = await generate_silence(0.5, bitrate)
 
     while True:
+        # Check if a channel change was requested via the web UI
+        if server.channel_change_event.is_set():
+            server.channel_change_event.clear()
+            playlist_filter = server.pending_channel
+            channel_name = playlist_filter or "All"
+            server.set_current_channel(channel_name)
+            logger.info("Switched to channel: %s", channel_name)
+
         # Fetch fresh playlist data each cycle
         logger.info("Fetching Poolsuite playlists...")
         try:
@@ -159,6 +166,15 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
             logger.info("Retrying in 30 seconds...")
             await asyncio.sleep(30)
             continue
+
+        # Populate available channel names for the web UI
+        channel_names = []
+        for pl in playlists:
+            name = pl.get("name") or pl.get("title") or ""
+            if name:
+                channel_names.append(name)
+        server.set_available_channels(channel_names)
+        server.set_current_channel(playlist_filter or "All")
 
         tracks = extract_tracks(playlists, playlist_filter)
         if not tracks:
@@ -179,6 +195,11 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         silence_task: asyncio.Task | None = None
 
         for i, track in enumerate(queue):
+            # Check for channel change — break out to re-fetch with new filter
+            if server.channel_change_event.is_set():
+                logger.info("Channel change — reloading playlist")
+                break
+
             # Use pre-resolved result if available, otherwise resolve now
             if next_resolved is not None:
                 display, audio_url = next_resolved
