@@ -21,167 +21,261 @@
     .title { font-family: 'Space Mono', monospace; font-size: 2.2em; font-weight: 700; background: linear-gradient(135deg, #ff6b9d, #ffa8cc, #c084fc, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
     .tagline { font-size: 0.85em; color: rgba(255,180,200,0.45); margin-top: 0.4em; font-family: 'Space Mono', monospace; }
 
-    /* Now Playing Card */
-    .np-card {
-      background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(192,132,252,0.08), rgba(103,232,249,0.06));
-      border: 1px solid rgba(255,107,157,0.2);
-      border-radius: 14px;
-      padding: 1.5em;
-      margin-bottom: 1.5em;
-      position: relative;
-      overflow: hidden;
-    }
-    .np-card::before {
-      content: '';
-      position: absolute;
-      top: -50%; right: -30%;
-      width: 200%; height: 200%;
-      background: radial-gradient(ellipse at 70% 30%, rgba(192,132,252,0.06) 0%, transparent 50%);
-      pointer-events: none;
-    }
-    .np-label { font-family: 'Space Mono', monospace; font-size: 0.7em; letter-spacing: 0.2em; text-transform: uppercase; color: #ff6b9d; margin-bottom: 0.5em; }
-    .np-title { font-size: 1.4em; font-weight: 700; color: #f0e6d3; text-decoration: none; display: block; line-height: 1.3; }
-    a.np-title:hover { color: #ffa8cc; }
-    .np-meta { font-size: 0.8em; color: rgba(255,180,200,0.5); margin-top: 0.5em; font-family: 'Space Mono', monospace; }
-
-    /* Transport inside NP card */
-    .np-transport {
-      display: flex;
-      align-items: center;
-      gap: 0.6em;
-      margin-top: 1em;
-      padding-top: 1em;
-      border-top: 1px solid rgba(255,107,157,0.12);
-    }
-    .t-btn {
-      display: flex; align-items: center; gap: 0.5em;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 8px;
-      color: rgba(240,230,211,0.8);
-      text-decoration: none;
-      padding: 0.5em 1em;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.75em;
-      letter-spacing: 0.05em;
-      transition: all 0.15s;
-    }
-    .t-btn:hover { background: rgba(255,107,157,0.15); border-color: rgba(255,107,157,0.3); color: #ffa8cc; }
-    .t-btn svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
-
-    /* Section */
-    .section { margin-bottom: 1.5em; }
-    .section-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.75em;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(255,180,200,0.55);
-      margin-bottom: 0.8em;
-    }
-
-    /* Car Stereo Tuner */
+    /* === THE STEREO === */
     .stereo {
-      background: linear-gradient(180deg, #1c1c2e, #141425);
-      border: 2px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 1.5em;
+      background: linear-gradient(180deg, #22223a 0%, #1a1a2e 40%, #151528 100%);
+      border: 2px solid rgba(255,255,255,0.07);
+      border-top-color: rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 0;
       position: relative;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 8px 32px rgba(0,0,0,0.4),
+        0 2px 8px rgba(0,0,0,0.3);
+      overflow: hidden;
+      margin-bottom: 1.5em;
     }
-    .stereo::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,107,157,0.2), rgba(192,132,252,0.2), transparent);
+    .stereo-top {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+      padding: 1.2em 1.5em 0 1.5em;
     }
     .stereo-brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
+    }
+    .stereo-brand-name {
       font-family: 'Space Mono', monospace;
-      font-size: 0.55em;
+      font-size: 0.6em;
       letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.3);
-      text-align: center;
-      margin-bottom: 1.2em;
+      color: rgba(255,180,200,0.35);
+    }
+    .stereo-brand-model {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55em;
+      letter-spacing: 0.15em;
+      color: rgba(255,180,200,0.2);
     }
 
     /* LCD Display */
     .lcd {
-      background: linear-gradient(180deg, #0a0e1a, #0d1220);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 8px;
-      padding: 0.8em 1.2em;
-      margin-bottom: 1em;
-      text-align: center;
+      background: linear-gradient(180deg, #060a14, #0a0f1c, #080d18);
+      border: 2px solid #0a0a12;
+      border-radius: 10px;
+      padding: 1em 1.2em;
       position: relative;
       overflow: hidden;
+      box-shadow:
+        inset 0 2px 8px rgba(0,0,0,0.5),
+        0 1px 0 rgba(255,255,255,0.04);
     }
     .lcd::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .lcd::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(103,232,249,0.02), transparent);
       pointer-events: none;
     }
-    .lcd-freq {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.7em;
-      color: rgba(103,232,249,0.5);
-      letter-spacing: 0.15em;
-    }
-    .lcd-channel {
-      font-family: 'Space Mono', monospace;
-      font-size: 1.1em;
-      font-weight: 700;
-      color: #67e8f9;
-      text-shadow: 0 0 10px rgba(103,232,249,0.4);
-      margin: 0.2em 0;
-    }
-
-    /* Dial */
-    .dial-area { padding: 0.8em 0; position: relative; }
-    .dial-track {
-      position: relative;
-      height: 2px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 1px;
-      margin: 0.6em 0.5em;
-    }
-    .dial-notches {
-      position: absolute;
-      top: -6px; left: 0; right: 0;
+    .lcd-top-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4em;
+      position: relative;
+      z-index: 2;
     }
-    .dial-notch { width: 1px; height: 14px; background: rgba(255,180,200,0.12); }
-    .dial-notch:nth-child(5n) { height: 18px; background: rgba(255,180,200,0.25); }
-    .dial-glow {
-      position: absolute;
-      top: -5px;
-      width: 12px; height: 12px;
+    .lcd-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55em;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(103,232,249,0.4);
+    }
+    .lcd-dot {
+      width: 6px; height: 6px;
       background: #ff6b9d;
       border-radius: 50%;
-      box-shadow: 0 0 8px rgba(255,107,157,0.7), 0 0 24px rgba(255,107,157,0.25);
+      box-shadow: 0 0 4px rgba(255,107,157,0.6);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Scrolling song title */
+    .lcd-marquee {
+      overflow: hidden;
+      position: relative;
+      z-index: 2;
+      height: 1.6em;
+      margin: 0.3em 0;
+    }
+    .lcd-marquee-inner {
+      display: inline-block;
+      white-space: nowrap;
+      font-family: 'Space Mono', monospace;
+      font-size: 1.15em;
+      font-weight: 700;
+      color: #67e8f9;
+      text-shadow: 0 0 12px rgba(103,232,249,0.5), 0 0 30px rgba(103,232,249,0.15);
+      animation: scroll-left 15s linear infinite;
+      padding-left: 100%;
+    }
+    .lcd-marquee-inner a { color: inherit; text-decoration: none; }
+    .lcd-marquee-inner a:hover { color: #a5f3fc; }
+    @keyframes scroll-left {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .lcd-meta {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6em;
+      color: rgba(103,232,249,0.35);
+      margin-top: 0.4em;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Transport below LCD */
+    .stereo-transport {
+      display: flex;
+      justify-content: center;
+      gap: 0.5em;
+      padding: 1em 1.5em;
+    }
+    .t-btn {
+      display: flex; align-items: center; gap: 0.5em;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: rgba(240,230,211,0.75);
+      text-decoration: none;
+      padding: 0.5em 1.2em;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75em;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+    }
+    .t-btn:hover { background: rgba(255,107,157,0.12); border-color: rgba(255,107,157,0.3); color: #ffa8cc; }
+    .t-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+
+    /* Chrome divider */
+    .chrome {
+      height: 3px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Dial section */
+    .dial-section {
+      padding: 1em 1.5em 0.6em 1.5em;
+    }
+    .dial-section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6em;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255,180,200,0.4);
+      text-align: center;
+      margin-bottom: 0.8em;
+    }
+
+    /* Analog dial */
+    .dial-housing {
+      background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.1));
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 1em 1.2em;
+      position: relative;
+    }
+    .dial-scale {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 0.3em;
+      margin-bottom: 0.5em;
+    }
+    .dial-mark {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .dial-mark-line { width: 1px; height: 12px; background: rgba(255,180,200,0.2); }
+    .dial-mark-line.tall { height: 18px; background: rgba(255,180,200,0.35); }
+    .dial-mark-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.5em;
+      color: rgba(255,180,200,0.3);
+    }
+    .dial-groove {
+      position: relative;
+      height: 6px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 3px;
+      margin: 0 0.3em;
+    }
+    .dial-groove-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 12%;
+      background: linear-gradient(90deg, rgba(255,107,157,0.15), rgba(255,107,157,0.05));
+      border-radius: 3px 0 0 3px;
+    }
+    .dial-needle {
+      position: absolute;
+      top: -8px;
+      left: 10%;
+      width: 3px;
+      height: 22px;
+      background: linear-gradient(180deg, #ff6b9d, #ff3d7f);
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(255,107,157,0.6), 0 0 16px rgba(255,107,157,0.2);
       transition: left 0.4s ease;
+    }
+    .dial-needle::before {
+      content: '';
+      position: absolute;
+      top: -3px; left: -2px;
+      width: 7px; height: 7px;
+      background: #ff6b9d;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255,107,157,0.8);
     }
 
     /* Channel Buttons */
+    .ch-section { padding: 0 1.5em 1.3em 1.5em; }
     .ch-grid {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 0.4em;
-      margin-top: 0.8em;
+      gap: 0.5em;
     }
     .ch-btn {
       font-family: 'Space Mono', monospace;
       font-size: 0.72em;
-      padding: 0.45em 0.9em;
+      padding: 0.5em 1em;
       background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,180,200,0.15);
+      border: 1px solid rgba(255,180,200,0.18);
       border-radius: 6px;
-      color: rgba(240,230,211,0.65);
+      color: rgba(240,230,211,0.7);
       text-decoration: none;
       transition: all 0.2s;
       cursor: pointer;
@@ -192,19 +286,22 @@
       color: #ffa8cc;
     }
     .ch-active {
-      background: linear-gradient(135deg, rgba(255,107,157,0.2), rgba(192,132,252,0.15));
+      background: linear-gradient(135deg, rgba(255,107,157,0.2), rgba(192,132,252,0.12));
       border-color: #ff6b9d;
       color: #ffa8cc;
       font-weight: 700;
-      box-shadow: 0 0 8px rgba(255,107,157,0.15);
+      box-shadow: 0 0 10px rgba(255,107,157,0.12);
     }
 
-    /* Stereo chrome strip */
-    .chrome-strip {
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-      margin: 1em 0 0.5em 0;
-      border-radius: 1px;
+    /* Section */
+    .section { margin-bottom: 1.5em; }
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75em;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,180,200,0.55);
+      margin-bottom: 0.8em;
     }
 
     /* Audio player */
@@ -304,12 +401,38 @@
     <div class="tagline">192.168.1.100 &middot; port 8489</div>
   </div>
 
-  <!-- Now Playing + Transport -->
-  <div class="np-card">
-    <div class="np-label">Now Playing</div>
-    <a href="https://soundcloud.com/poolsuite" target="_blank" class="np-title">Kraak &amp; Smaak &mdash; Keep It Together</a>
-    <div class="np-meta">All &middot; 1 listener &middot; 7 played</div>
-    <div class="np-transport">
+  <!-- === THE STEREO UNIT === -->
+  <div class="stereo">
+    <div class="stereo-top">
+      <div class="stereo-brand">
+        <span class="stereo-brand-name">Poolsuite</span>
+        <span class="stereo-brand-model">FM-89 Stereo</span>
+      </div>
+
+      <!-- LCD with scrolling song -->
+      <div class="lcd">
+        <div class="lcd-top-row">
+          <span class="lcd-label">Now Playing</span>
+          <span class="lcd-dot"></span>
+        </div>
+        <div class="lcd-marquee">
+          <span class="lcd-marquee-inner">
+            <a href="https://soundcloud.com/poolsuite" target="_blank">
+              Kraak &amp; Smaak &mdash; Keep It Together &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;
+              Kraak &amp; Smaak &mdash; Keep It Together &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;
+            </a>
+          </span>
+        </div>
+        <div class="lcd-meta">
+          <span>CH: All</span>
+          <span>1 listener</span>
+          <span>7 played</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transport -->
+    <div class="stereo-transport">
       <a href="#" class="t-btn">
         <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm12 0l-8.5 6L18 18V6z"/></svg>
         PREV
@@ -319,37 +442,35 @@
         <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
       </a>
     </div>
-  </div>
 
-  <!-- Car Stereo Tuner -->
-  <div class="section">
-    <div class="stereo">
-      <div class="stereo-brand">Poolsuite &middot; Stereo Tuner</div>
+    <div class="chrome"></div>
 
-      <div class="lcd">
-        <div class="lcd-freq">88.1 &mdash; 108.0 MHz</div>
-        <div class="lcd-channel">ALL CHANNELS</div>
-      </div>
-
-      <div class="dial-area">
-        <div class="dial-track">
-          <div class="dial-notches">
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span><span class="dial-notch"></span><span class="dial-notch"></span>
-            <span class="dial-notch"></span>
-          </div>
-          <div class="dial-glow" style="left: 5%;"></div>
+    <!-- Analog dial -->
+    <div class="dial-section">
+      <div class="dial-section-label">Channel Selector</div>
+      <div class="dial-housing">
+        <div class="dial-scale">
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">88</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">92</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">96</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">100</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">104</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">108</div></div>
+        </div>
+        <div class="dial-groove">
+          <div class="dial-groove-fill"></div>
+          <div class="dial-needle"></div>
         </div>
       </div>
+    </div>
 
-      <div class="chrome-strip"></div>
-
+    <!-- Channel buttons -->
+    <div class="ch-section">
       <div class="ch-grid">
         <a href="#" class="ch-btn ch-active">All</a>
         <a href="#" class="ch-btn">Poolsuite FM</a>
