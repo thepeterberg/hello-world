@@ -55,6 +55,7 @@ class RadioServer:
         self._app.router.add_get("/", self._handle_index)
         self._started_at = time.time()
         self._tracks_played = 0
+        self._history: list[tuple[str, float]] = []  # (title, timestamp)
 
     @staticmethod
     def _detect_local_ip() -> str:
@@ -82,6 +83,9 @@ class RadioServer:
     def set_now_playing(self, title: str) -> None:
         self._now_playing = title
         self._tracks_played += 1
+        self._history.insert(0, (title, time.time()))
+        # Keep last 100 tracks
+        self._history = self._history[:100]
         logger.info("Now playing: %s", title)
 
     async def push_audio(self, data: bytes) -> None:
@@ -247,6 +251,36 @@ class RadioServer:
             "stream_url": self.stream_url,
         })
 
+    def _render_history(self) -> str:
+        """Render the play history as HTML rows."""
+        if not self._history:
+            return '<div class="history-empty">No tracks played yet</div>'
+        now = time.time()
+        rows = []
+        for i, (title, ts) in enumerate(self._history):
+            ago = int(now - ts)
+            if ago < 60:
+                time_str = "just now" if ago < 10 else f"{ago}s ago"
+            elif ago < 3600:
+                time_str = f"{ago // 60}m ago"
+            else:
+                time_str = f"{ago // 3600}h {(ago % 3600) // 60}m ago"
+            label = "NOW" if i == 0 else str(i)
+            # Split "Artist - Title" if possible
+            if " - " in title:
+                artist, track = title.split(" - ", 1)
+                display = f"<strong>{artist}</strong> &mdash; {track}"
+            else:
+                display = f"<strong>{title}</strong>"
+            rows.append(
+                f'<div class="history-row">'
+                f'<span class="track-num">{label}</span>'
+                f'<span class="track-title">{display}</span>'
+                f'<span class="track-time">{time_str}</span>'
+                f'</div>'
+            )
+        return "\n".join(rows)
+
     async def _handle_index(self, request: web.Request) -> web.Response:
         """Simple landing page."""
         ip = self.local_ip
@@ -287,6 +321,15 @@ class RadioServer:
     .copy-btn.copied {{ border-color: #64dfdf; color: #64dfdf; }}
     audio {{ width: 100%; margin-top: 1em; }}
     .section-label {{ color: rgba(224,214,138,0.5); text-transform: uppercase; font-size: 0.75em; letter-spacing: 0.1em; margin-bottom: 0.5em; }}
+    .history {{ background: rgba(255,255,255,0.03); border: 1px solid rgba(224,214,138,0.15); border-radius: 6px; max-height: 400px; overflow-y: auto; }}
+    .history-row {{ display: flex; align-items: center; padding: 0.6em 1em; border-bottom: 1px solid rgba(224,214,138,0.08); gap: 1em; }}
+    .history-row:last-child {{ border-bottom: none; }}
+    .history-row:first-child {{ background: rgba(100,223,223,0.08); }}
+    .history-row .track-title {{ flex: 1; font-size: 0.9em; }}
+    .history-row .track-title strong {{ color: #64dfdf; }}
+    .history-row .track-time {{ color: rgba(224,214,138,0.4); font-size: 0.8em; white-space: nowrap; }}
+    .history-row .track-num {{ color: rgba(224,214,138,0.3); font-size: 0.75em; min-width: 1.5em; text-align: right; }}
+    .history-empty {{ padding: 2em; text-align: center; color: rgba(224,214,138,0.3); }}
   </style>
   <script>
     function copyUrl(btn, url) {{
@@ -349,6 +392,10 @@ class RadioServer:
   <hr>
   <p class="section-label">Listen in browser</p>
   <audio controls src="/stream"></audio>
+
+  <hr>
+  <p class="section-label">Play History</p>
+  <div class="history">{self._render_history()}</div>
 </body>
 </html>"""
         return web.Response(text=html, content_type="text/html")
