@@ -80,34 +80,62 @@ async def resolve_stream_url(track_id: str, soundcloud_url: str | None = None) -
     return None
 
 
-async def transcode_to_mp3_stream(
-    audio_url: str,
+async def start_master_encoder(
     bitrate: str = "192k",
     sample_rate: int = 44100,
 ) -> asyncio.subprocess.Process:
-    """Launch an ffmpeg process that reads from audio_url and outputs MP3 to stdout.
+    """Start a long-lived ffmpeg process that reads raw PCM from stdin
+    and outputs a continuous MP3 stream to stdout.
 
-    Args:
-        audio_url: Direct URL to the source audio.
-        bitrate: Target MP3 bitrate (e.g. "192k").
-        sample_rate: Output sample rate in Hz.
-
-    Returns:
-        The ffmpeg subprocess (read from proc.stdout for MP3 bytes).
+    This is the key to keeping Roon connected: one never-ending MP3
+    stream with no end-of-stream markers between tracks.
     """
     cmd = [
         "ffmpeg",
         "-hide_banner",
         "-loglevel", "warning",
-        "-re",              # Read at realtime speed (important for streaming)
-        "-i", audio_url,    # Input from URL
-        "-vn",              # No video
+        "-f", "s16le",          # Raw PCM input
+        "-ar", str(sample_rate),
+        "-ac", "2",             # Stereo
+        "-i", "pipe:0",         # Read from stdin
         "-codec:a", "libmp3lame",
         "-b:a", bitrate,
         "-ar", str(sample_rate),
-        "-ac", "2",         # Stereo
-        "-f", "mp3",        # Output format
-        "pipe:1",           # Output to stdout
+        "-ac", "2",
+        "-f", "mp3",            # Output format
+        "pipe:1",               # Write to stdout
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    logger.info("Master MP3 encoder started (pid=%d)", proc.pid)
+    return proc
+
+
+async def decode_to_pcm(
+    audio_url: str,
+    sample_rate: int = 44100,
+) -> asyncio.subprocess.Process:
+    """Decode an audio URL to raw PCM (s16le, stereo) via ffmpeg.
+
+    The output should be piped into the master encoder's stdin.
+    """
+    cmd = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel", "warning",
+        "-re",                  # Realtime speed
+        "-i", audio_url,
+        "-vn",
+        "-f", "s16le",         # Raw PCM output
+        "-acodec", "pcm_s16le",
+        "-ar", str(sample_rate),
+        "-ac", "2",
+        "pipe:1",
     ]
 
     proc = await asyncio.create_subprocess_exec(
@@ -116,6 +144,16 @@ async def transcode_to_mp3_stream(
         stderr=asyncio.subprocess.PIPE,
     )
     return proc
+
+
+def generate_silence_pcm(duration_seconds: float = 1.0, sample_rate: int = 44100) -> bytes:
+    """Generate raw PCM silence (s16le, stereo).
+
+    No ffmpeg needed — it's just zero bytes.
+    """
+    # s16le stereo: 2 bytes per sample * 2 channels * sample_rate * duration
+    num_bytes = int(2 * 2 * sample_rate * duration_seconds)
+    return b"\x00" * num_bytes
 
 
 async def generate_silence(duration_seconds: float = 2.0, bitrate: str = "192k") -> bytes:

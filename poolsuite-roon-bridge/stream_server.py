@@ -9,6 +9,7 @@ ICY metadata is optionally injected for track titles.
 
 import asyncio
 import logging
+import socket
 import time
 
 from aiohttp import web
@@ -55,9 +56,28 @@ class RadioServer:
         self._started_at = time.time()
         self._tracks_played = 0
 
+    @staticmethod
+    def _detect_local_ip() -> str:
+        """Detect the machine's local network IP address."""
+        try:
+            # Connect to a public DNS to determine which interface is used
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
+
+    @property
+    def local_ip(self) -> str:
+        if not hasattr(self, "_local_ip"):
+            self._local_ip = self._detect_local_ip()
+        return self._local_ip
+
     @property
     def stream_url(self) -> str:
-        return f"http://{self.host}:{self.port}/stream"
+        return f"http://{self.local_ip}:{self.port}/stream"
 
     def set_now_playing(self, title: str) -> None:
         self._now_playing = title
@@ -229,41 +249,106 @@ class RadioServer:
 
     async def _handle_index(self, request: web.Request) -> web.Response:
         """Simple landing page."""
+        ip = self.local_ip
+        base = f"http://{ip}:{self.port}"
+
         channel_buttons = ""
         all_channels = ["All"] + self._available_channels
         for ch in all_channels:
             is_current = (ch == self._current_channel)
-            bg = "#64dfdf" if is_current else "#e0d68a"
-            color = "#1a1a2e"
-            border = "3px solid #64dfdf" if is_current else "3px solid transparent"
+            bg = "#64dfdf" if is_current else "rgba(224,214,138,0.15)"
+            color = "#1a1a2e" if is_current else "#e0d68a"
+            border = "2px solid #64dfdf" if is_current else "2px solid rgba(224,214,138,0.3)"
             channel_buttons += (
                 f'<a href="/channel?name={ch}" style="display: inline-block; '
-                f'padding: 0.5em 1em; margin: 0.3em; background: {bg}; color: {color}; '
-                f'text-decoration: none; font-weight: bold; border: {border};">{ch}</a>\n'
+                f'padding: 0.5em 1.2em; margin: 0.3em; background: {bg}; color: {color}; '
+                f'text-decoration: none; font-weight: bold; border: {border}; '
+                f'border-radius: 4px;">{ch}</a>\n'
             )
 
         html = f"""<!DOCTYPE html>
 <html>
-<head><title>Poolsuite Roon Bridge</title></head>
-<body style="font-family: monospace; background: #1a1a2e; color: #e0d68a; padding: 2em;">
-  <h1>🌴 Poolsuite → Roon Bridge</h1>
-  <p>Now Playing: <strong>{self._now_playing}</strong></p>
-  <p>Channel: <strong>{self._current_channel}</strong></p>
-  <p>Listeners: {len(self._listeners)} | Tracks played: {self._tracks_played}</p>
-  <hr>
-  <h3>Channels</h3>
-  <div style="margin: 0.5em 0 1.5em 0;">{channel_buttons}</div>
-  <hr>
-  <div style="margin: 1em 0;">
-    <a href="/prev" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em; margin-right: 0.5em;">&laquo; Previous</a>
-    <a href="/skip" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em;">Next &raquo;</a>
+<head>
+  <title>Poolsuite Roon Bridge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {{ font-family: 'SF Mono', 'Menlo', 'Monaco', monospace; background: #1a1a2e; color: #e0d68a; padding: 2em; max-width: 700px; margin: 0 auto; }}
+    h1 {{ margin-bottom: 0.3em; }}
+    .subtitle {{ color: #64dfdf; margin-top: 0; font-size: 0.85em; }}
+    hr {{ border: none; border-top: 1px solid rgba(224,214,138,0.2); margin: 1.5em 0; }}
+    .now-playing {{ font-size: 1.3em; margin: 0.5em 0; }}
+    .meta {{ color: rgba(224,214,138,0.6); font-size: 0.85em; }}
+    .btn {{ display: inline-block; padding: 0.7em 1.8em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1em; border-radius: 4px; margin: 0.3em; }}
+    .btn:hover {{ background: #64dfdf; }}
+    .roon-url {{ display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(224,214,138,0.2); border-radius: 6px; padding: 0.6em 1em; margin: 0.5em 0; gap: 0.8em; }}
+    .roon-url code {{ flex: 1; color: #64dfdf; word-break: break-all; font-size: 0.95em; }}
+    .copy-btn {{ background: none; border: 1px solid rgba(224,214,138,0.4); color: #e0d68a; padding: 0.4em 0.8em; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 0.85em; white-space: nowrap; }}
+    .copy-btn:hover {{ background: rgba(224,214,138,0.15); }}
+    .copy-btn.copied {{ border-color: #64dfdf; color: #64dfdf; }}
+    audio {{ width: 100%; margin-top: 1em; }}
+    .section-label {{ color: rgba(224,214,138,0.5); text-transform: uppercase; font-size: 0.75em; letter-spacing: 0.1em; margin-bottom: 0.5em; }}
+  </style>
+  <script>
+    function copyUrl(btn, url) {{
+      navigator.clipboard.writeText(url).then(() => {{
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {{ btn.textContent = 'Copy'; btn.classList.remove('copied'); }}, 2000);
+      }});
+    }}
+  </script>
+</head>
+<body>
+  <h1>Poolsuite &rarr; Roon</h1>
+  <p class="subtitle">Local bridge &middot; {ip}</p>
+
+  <div class="now-playing">Now Playing: <strong>{self._now_playing}</strong></div>
+  <p class="meta">Channel: {self._current_channel} &middot; {len(self._listeners)} listener{"s" if len(self._listeners) != 1 else ""} &middot; {self._tracks_played} tracks played</p>
+
+  <div style="margin: 1.2em 0;">
+    <a href="/prev" class="btn">&laquo; Previous</a>
+    <a href="/skip" class="btn">Next &raquo;</a>
   </div>
+
   <hr>
-  <p>Stream URL: <a href="/stream" style="color: #64dfdf;">{self.stream_url}</a></p>
-  <p>Add <code>{self.stream_url}</code> as a Live Radio station in Roon.</p>
-  <audio controls src="/stream" style="width: 100%; margin-top: 1em;">
-    Your browser does not support the audio element.
-  </audio>
+  <p class="section-label">Channels</p>
+  <div style="margin: 0.3em 0 1em 0;">{channel_buttons}</div>
+
+  <hr>
+  <p class="section-label">Add to Roon &mdash; Live Radio</p>
+
+  <div class="roon-url">
+    <code>{base}/stream</code>
+    <button class="copy-btn" onclick="copyUrl(this, '{base}/stream')">Copy</button>
+  </div>
+
+  <hr>
+  <p class="section-label">Endpoints</p>
+
+  <div class="roon-url">
+    <code>{base}/stream</code>
+    <span class="meta" style="white-space:nowrap;">MP3 stream</span>
+    <button class="copy-btn" onclick="copyUrl(this, '{base}/stream')">Copy</button>
+  </div>
+  <div class="roon-url">
+    <code>{base}/status</code>
+    <span class="meta" style="white-space:nowrap;">JSON status</span>
+    <button class="copy-btn" onclick="copyUrl(this, '{base}/status')">Copy</button>
+  </div>
+  <div class="roon-url">
+    <code>{base}/skip</code>
+    <span class="meta" style="white-space:nowrap;">Skip track</span>
+    <button class="copy-btn" onclick="copyUrl(this, '{base}/skip')">Copy</button>
+  </div>
+  <div class="roon-url">
+    <code>{base}/prev</code>
+    <span class="meta" style="white-space:nowrap;">Previous track</span>
+    <button class="copy-btn" onclick="copyUrl(this, '{base}/prev')">Copy</button>
+  </div>
+
+  <hr>
+  <p class="section-label">Listen in browser</p>
+  <audio controls src="/stream"></audio>
 </body>
 </html>"""
         return web.Response(text=html, content_type="text/html")
