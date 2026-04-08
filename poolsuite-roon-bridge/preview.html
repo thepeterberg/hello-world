@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>POOLSUITE FM &mdash; Roon Bridge</title>
+  <title>POOLSUITE FM &mdash; Poolside Roon Service</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
     /* Header */
     .header { text-align: center; margin-bottom: 2em; }
     .logo { font-family: 'Space Mono', monospace; font-size: 0.8em; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,180,200,0.7); margin-bottom: 0.5em; }
-    .title { font-family: 'Space Mono', monospace; font-size: 2.2em; font-weight: 700; background: linear-gradient(135deg, #ff6b9d, #ffa8cc, #c084fc, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
+    .title { font-family: 'Space Mono', monospace; font-size: 1.8em; font-weight: 700; background: linear-gradient(135deg, #ff6b9d, #ffa8cc, #c084fc, #67e8f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
     .tagline { font-size: 0.85em; color: rgba(255,180,200,0.45); margin-top: 0.4em; font-family: 'Space Mono', monospace; }
 
     /* === THE STEREO === */
@@ -51,13 +51,13 @@
       font-size: 0.6em;
       letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.6);
+      color: rgba(255,200,215,0.75);
     }
     .stereo-brand-model {
       font-family: 'Space Mono', monospace;
       font-size: 0.55em;
       letter-spacing: 0.15em;
-      color: rgba(255,180,200,0.4);
+      color: rgba(255,200,215,0.55);
     }
 
     /* LCD Display */
@@ -98,10 +98,11 @@
     }
     .lcd-label {
       font-family: 'Space Mono', monospace;
-      font-size: 0.6em;
+      font-size: 0.65em;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: rgba(103,232,249,0.8);
+      color: #7dd8e8;
+      text-shadow: 0 0 6px rgba(103,232,249,0.3);
     }
     .lcd-dot {
       width: 6px; height: 6px;
@@ -120,21 +121,33 @@
       overflow: hidden;
       position: relative;
       z-index: 2;
-      height: 1.6em;
+      min-height: 1.8em;
       margin: 0.3em 0;
+      cursor: pointer;
     }
     .lcd-marquee-inner {
       display: inline-block;
       white-space: nowrap;
       font-family: 'Space Mono', monospace;
-      font-size: 1.15em;
+      font-size: 1.3em;
       font-weight: 700;
-      color: #a5f3fc;
-      text-shadow: 0 0 8px rgba(103,232,249,0.7), 0 0 24px rgba(103,232,249,0.3);
+      color: #c4f5fd;
+      text-shadow: 0 0 6px rgba(103,232,249,0.8), 0 0 20px rgba(103,232,249,0.4);
       animation: scroll-left 25s linear infinite;
       padding-left: 100%;
     }
-    .lcd-marquee:hover .lcd-marquee-inner { animation-play-state: paused; }
+    .lcd-marquee:hover {
+      overflow: visible;
+    }
+    .lcd-marquee:hover .lcd-marquee-inner {
+      animation: none;
+      padding-left: 0;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+      display: block;
+      font-size: 1.1em;
+    }
     .lcd-marquee-inner a { color: inherit; text-decoration: none; }
     .lcd-marquee-inner a:hover { color: #fff; }
     @keyframes scroll-left {
@@ -146,8 +159,9 @@
       display: flex;
       justify-content: space-between;
       font-family: 'Space Mono', monospace;
-      font-size: 0.65em;
-      color: rgba(103,232,249,0.7);
+      font-size: 0.7em;
+      color: #6dcad9;
+      text-shadow: 0 0 4px rgba(103,232,249,0.2);
       margin-top: 0.4em;
       position: relative;
       z-index: 2;
@@ -192,7 +206,7 @@
       font-size: 0.6em;
       letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.65);
+      color: rgba(255,180,200,0.8);
       text-align: center;
       margin-bottom: 0.8em;
     }
@@ -422,7 +436,7 @@
 
   <div class="header">
     <div class="logo">Poolsuite FM</div>
-    <div class="title">Roon Bridge</div>
+    <div class="title">Poolside Roon Service</div>
     <div class="tagline">192.168.1.100 &middot; port 8489</div>
   </div>
 
