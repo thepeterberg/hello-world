@@ -21,7 +21,6 @@ from pathlib import Path
 from audio_pipeline import (
     check_dependencies,
     decode_to_pcm,
-    generate_silence_pcm,
     resolve_stream_url,
     start_master_encoder,
 )
@@ -60,16 +59,19 @@ async def feed_track_to_encoder(
     server: RadioServer,
     encoder: asyncio.subprocess.Process,
     audio_url: str,
+    silence_stop: asyncio.Event | None = None,
 ) -> bool:
     """Decode a track to PCM and feed it into the master encoder's stdin.
 
-    The master encoder continuously produces MP3 output — no gaps,
-    no end-of-stream markers. Roon stays connected.
+    Args:
+        silence_stop: If set, signals the silence feeder to stop once
+            the first audio chunk from this track arrives.
 
     Returns True if the track completed naturally.
     Raises asyncio.CancelledError if skipped.
     """
     decoder = await decode_to_pcm(audio_url)
+    first_chunk = True
 
     try:
         while True:
@@ -86,6 +88,11 @@ async def feed_track_to_encoder(
             if not chunk:
                 break
 
+            # Stop the silence feeder once real audio arrives
+            if first_chunk and silence_stop is not None:
+                silence_stop.set()
+                first_chunk = False
+
             # Feed raw PCM into the master encoder
             encoder.stdin.write(chunk)
             await encoder.stdin.drain()
@@ -98,6 +105,31 @@ async def feed_track_to_encoder(
         return False
 
     return True
+
+
+async def feed_silence_loop(
+    encoder: asyncio.subprocess.Process,
+    stop: asyncio.Event,
+    sample_rate: int = 44100,
+) -> None:
+    """Continuously feed realtime-paced silence PCM to the encoder.
+
+    This keeps the MP3 stream alive when no track is being decoded.
+    Feeds 0.5s of silence at a time, paced at roughly realtime.
+    """
+    # 0.5 seconds of silence at a time
+    chunk_duration = 0.5
+    silence = b"\x00" * int(2 * 2 * sample_rate * chunk_duration)
+    while not stop.is_set():
+        try:
+            encoder.stdin.write(silence)
+            await encoder.stdin.drain()
+        except Exception:
+            break
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=chunk_duration)
+        except asyncio.TimeoutError:
+            pass
 
 
 async def resolve_track(track: dict) -> tuple[str, str | None]:
@@ -141,8 +173,6 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
     bitrate = config["bitrate"]
     shuffle = config["shuffle"]
     playlist_filter = config.get("playlist_filter")
-    # Pre-generate PCM silence for gaps between tracks (no ffmpeg needed)
-    silence_pcm = generate_silence_pcm(config["crossfade_seconds"])
 
     # Start the master MP3 encoder — one continuous stream, no EOF markers
     encoder = await start_master_encoder(bitrate=bitrate)
@@ -166,10 +196,12 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         except Exception as e:
             logger.error("Failed to fetch playlists: %s", e)
             logger.info("Retrying in 30 seconds...")
-            # Feed silence while waiting
-            encoder.stdin.write(generate_silence_pcm(30))
-            await encoder.stdin.drain()
+            # Feed silence while waiting (realtime paced)
+            wait_stop = asyncio.Event()
+            wait_task = asyncio.create_task(feed_silence_loop(encoder, wait_stop))
             await asyncio.sleep(30)
+            wait_stop.set()
+            wait_task.cancel()
             continue
 
         # Populate available channel names for the web UI
@@ -184,9 +216,11 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         tracks = extract_tracks(playlists, playlist_filter)
         if not tracks:
             logger.error("No tracks found. Retrying in 30 seconds...")
-            encoder.stdin.write(generate_silence_pcm(30))
-            await encoder.stdin.drain()
+            wait_stop = asyncio.Event()
+            wait_task = asyncio.create_task(feed_silence_loop(encoder, wait_stop))
             await asyncio.sleep(30)
+            wait_stop.set()
+            wait_task.cancel()
             continue
 
         queue = build_queue(tracks, shuffle=shuffle)
@@ -197,6 +231,9 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         next_resolve_task: asyncio.Task | None = None
         # Track history for "previous" support
         history: list[dict] = []
+        # Silence feeder keeps the encoder fed between tracks
+        silence_feeder_stop: asyncio.Event | None = None
+        silence_feeder_task: asyncio.Task | None = None
 
         i = 0
         while i < len(queue):
@@ -244,19 +281,26 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
             server.set_now_playing(display)
             history.append(track)
 
+            # Feed the track to the encoder. Pass silence_feeder_stop so
+            # the silence feeder is stopped once real audio arrives.
             try:
                 success = await feed_track_to_encoder(
-                    server, encoder, audio_url
+                    server, encoder, audio_url,
+                    silence_stop=silence_feeder_stop,
                 )
                 if not success:
                     logger.warning("Track failed to stream: %s", display)
             except asyncio.CancelledError:
                 pass
 
-            # Feed silence gap between tracks — goes straight into the
-            # master encoder, so the MP3 stream never stops
-            encoder.stdin.write(silence_pcm)
-            await encoder.stdin.drain()
+            # Track ended — start feeding realtime-paced silence to keep
+            # the encoder producing output while we resolve the next track
+            silence_feeder_stop = asyncio.Event()
+            if silence_feeder_task and not silence_feeder_task.done():
+                silence_feeder_task.cancel()
+            silence_feeder_task = asyncio.create_task(
+                feed_silence_loop(encoder, silence_feeder_stop)
+            )
 
             # Wait for next track resolution if it's still in progress
             if next_resolve_task is not None and not next_resolve_task.done():
@@ -267,6 +311,11 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
                 next_resolve_task = None
 
             i += 1
+
+        # Clean up silence feeder at end of playlist
+        if silence_feeder_task and not silence_feeder_task.done():
+            silence_feeder_stop.set()
+            silence_feeder_task.cancel()
 
         logger.info("Playlist complete, reshuffling...")
     finally:
