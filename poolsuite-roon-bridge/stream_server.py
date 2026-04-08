@@ -39,6 +39,7 @@ class RadioServer:
         self._available_channels: list[str] = []
         self._running = False
         self._skip_event: asyncio.Event = asyncio.Event()
+        self._prev_event: asyncio.Event = asyncio.Event()
         self._channel_change_event: asyncio.Event = asyncio.Event()
         self._pending_channel: str | None = None
         self._app = web.Application()
@@ -47,6 +48,8 @@ class RadioServer:
         self._app.router.add_get("/status", self._handle_status)
         self._app.router.add_post("/skip", self._handle_skip)
         self._app.router.add_get("/skip", self._handle_skip)
+        self._app.router.add_post("/prev", self._handle_prev)
+        self._app.router.add_get("/prev", self._handle_prev)
         self._app.router.add_get("/channel", self._handle_channel)
         self._app.router.add_get("/", self._handle_index)
         self._started_at = time.time()
@@ -161,6 +164,11 @@ class RadioServer:
         return self._skip_event
 
     @property
+    def prev_event(self) -> asyncio.Event:
+        """Event that is set when a previous track is requested."""
+        return self._prev_event
+
+    @property
     def channel_change_event(self) -> asyncio.Event:
         """Event set when a channel change is requested."""
         return self._channel_change_event
@@ -183,6 +191,15 @@ class RadioServer:
         if "text/html" in request.headers.get("Accept", ""):
             raise web.HTTPFound("/")
         return web.json_response({"status": "skipping", "was_playing": self._now_playing})
+
+    async def _handle_prev(self, request: web.Request) -> web.Response:
+        """Handle a previous track request — go back to the prior track."""
+        logger.info("Previous track requested")
+        self._prev_event.set()
+        self._skip_event.set()  # Stop the current track
+        if "text/html" in request.headers.get("Accept", ""):
+            raise web.HTTPFound("/")
+        return web.json_response({"status": "going_back", "was_playing": self._now_playing})
 
     async def _handle_channel(self, request: web.Request) -> web.Response:
         """Handle a channel change request."""
@@ -238,7 +255,8 @@ class RadioServer:
   <div style="margin: 0.5em 0 1.5em 0;">{channel_buttons}</div>
   <hr>
   <div style="margin: 1em 0;">
-    <a href="/skip" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em;">Skip Track &raquo;</a>
+    <a href="/prev" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em; margin-right: 0.5em;">&laquo; Previous</a>
+    <a href="/skip" style="display: inline-block; padding: 0.8em 2em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1.1em;">Next &raquo;</a>
   </div>
   <hr>
   <p>Stream URL: <a href="/stream" style="color: #64dfdf;">{self.stream_url}</a></p>

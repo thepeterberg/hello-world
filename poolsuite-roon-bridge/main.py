@@ -189,16 +189,34 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         next_resolved: tuple[str, str | None] | None = None
         next_resolve_task: asyncio.Task | None = None
         # Silence pump keeps the stream alive during track transitions.
-        # It's started after each track ends and stopped when the next
-        # track's ffmpeg produces its first audio chunk.
         silence_stop: asyncio.Event | None = None
         silence_task: asyncio.Task | None = None
+        # Track history for "previous" support
+        history: list[dict] = []
 
-        for i, track in enumerate(queue):
+        i = 0
+        while i < len(queue):
+            track = queue[i]
+
             # Check for channel change — break out to re-fetch with new filter
             if server.channel_change_event.is_set():
                 logger.info("Channel change — reloading playlist")
                 break
+
+            # Check for "previous" request
+            if server.prev_event.is_set():
+                server.prev_event.clear()
+                if len(history) >= 2:
+                    # Go back: pop current, replay previous
+                    history.pop()
+                    prev_track = history.pop()
+                    # Insert it at current position so the loop plays it next
+                    queue.insert(i, prev_track)
+                    next_resolved = None
+                    logger.info("Going back to previous track")
+                    continue
+                else:
+                    logger.info("No previous track available")
 
             # Use pre-resolved result if available, otherwise resolve now
             if next_resolved is not None:
@@ -209,6 +227,7 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
 
             if not audio_url:
                 logger.warning("Skipping unresolvable track: %s", display)
+                i += 1
                 continue
 
             # Start pre-resolving the NEXT track in the background
@@ -221,6 +240,7 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
                 next_resolve_task = asyncio.create_task(_resolve_next())
 
             server.set_now_playing(display)
+            history.append(track)
 
             # Pass the current silence_stop event to stream_track.
             # When ffmpeg produces its first chunk, it sets this event,
@@ -232,12 +252,10 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
                 if not success:
                     logger.warning("Track failed to stream: %s", display)
             except asyncio.CancelledError:
-                # Track was skipped
+                # Track was skipped (or prev requested — handled at top of loop)
                 pass
 
-            # Track ended — immediately start pumping silence so the
-            # stream never goes dead. This pump runs until the NEXT
-            # track's ffmpeg starts producing audio.
+            # Track ended — immediately start pumping silence
             silence_stop = asyncio.Event()
             if silence_task and not silence_task.done():
                 silence_task.cancel()
@@ -252,6 +270,8 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
             elif next_resolve_task is not None:
                 next_resolved = next_resolve_task.result()
                 next_resolve_task = None
+
+            i += 1
 
         # Clean up silence pump at end of playlist
         if silence_task and not silence_task.done():
