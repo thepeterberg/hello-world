@@ -170,20 +170,29 @@
       padding: 0.6em 1.3em;
     }
     .t-btn {
-      display: flex; align-items: center; gap: 0.5em;
+      display: flex; align-items: center; justify-content: center; gap: 0.4em;
       background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: 8px;
-      color: rgba(240,230,211,0.75);
+      color: rgba(240,230,211,0.8);
       text-decoration: none;
-      padding: 0.5em 1.2em;
+      padding: 0.5em 1em;
       font-family: 'Space Mono', monospace;
-      font-size: 0.75em;
+      font-size: 0.72em;
       letter-spacing: 0.05em;
       transition: all 0.15s;
+      min-width: 70px;
     }
     .t-btn:hover { background: rgba(255,107,157,0.12); border-color: rgba(255,107,157,0.3); color: #ffa8cc; }
     .t-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+    .t-btn-play {
+      background: rgba(103,232,249,0.12);
+      border-color: rgba(103,232,249,0.3);
+      color: #a5f3fc;
+      min-width: 80px;
+    }
+    .t-btn-play:hover { background: rgba(103,232,249,0.25); border-color: rgba(103,232,249,0.5); color: #c4f5fd; }
+    .t-btn-play svg { width: 16px; height: 16px; }
 
     /* Chrome divider */
     .chrome {
@@ -307,11 +316,12 @@
     .section { margin-bottom: 1em; }
     .section-label {
       font-family: 'Space Mono', monospace;
-      font-size: 0.75em;
+      font-size: 0.8em;
+      font-weight: 700;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.55);
-      margin-bottom: 0.8em;
+      color: #e88aaf;
+      margin-bottom: 0.6em;
     }
 
     /* Audio player */
@@ -401,6 +411,26 @@
         btn.classList.add('copied');
         setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
       });
+    }
+
+    // Play/Pause toggle
+    function togglePlayPause(e) {
+      e.preventDefault();
+      const playIcon = document.getElementById('playIcon');
+      const pauseIcon = document.getElementById('pauseIcon');
+      const label = document.getElementById('playPauseLabel');
+      const audio = document.querySelector('audio');
+      if (playIcon.style.display === 'none') {
+        playIcon.style.display = '';
+        pauseIcon.style.display = 'none';
+        label.textContent = 'PLAY';
+        if (audio) audio.pause();
+      } else {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = '';
+        label.textContent = 'PAUSE';
+        if (audio) audio.play();
+      }
     }
 
     // Hover on marquee: stop scroll, show single title scaled to fit
@@ -502,6 +532,11 @@
       <a href="#" class="t-btn">
         <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm12 0l-8.5 6L18 18V6z"/></svg>
         PREV
+      </a>
+      <a href="#" class="t-btn t-btn-play" id="playPauseBtn" onclick="togglePlayPause(event)">
+        <svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg>
+        <svg viewBox="0 0 24 24" id="pauseIcon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="playPauseLabel">PLAY</span>
       </a>
       <a href="#" class="t-btn">
         NEXT
