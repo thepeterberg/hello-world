@@ -104,6 +104,8 @@ async def resolve_track(track: dict) -> tuple[str, str | None]:
     if not audio_url:
         audio_url = await resolve_stream_url(track_id, sc_url)
 
+    # Small delay to avoid SoundCloud rate limiting
+    await asyncio.sleep(1)
     return display, audio_url
 
 

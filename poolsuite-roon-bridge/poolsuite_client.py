@@ -6,6 +6,7 @@ Fetches curated playlists and track metadata from the Poolsuite
 Cloudflare Workers API, which wraps SoundCloud.
 """
 
+import asyncio
 import logging
 import random
 
@@ -110,28 +111,37 @@ def build_queue(tracks: list[dict], shuffle: bool = True) -> list[dict]:
     return queue
 
 
-async def get_stream_url_from_api(track_id: str) -> str | None:
+async def get_stream_url_from_api(track_id: str, retries: int = 3) -> str | None:
     """Try to get a direct MP3 stream URL from Poolsuite's own API.
 
     This calls the /v2/get_sc_mp3_stream endpoint which may return
-    a direct audio URL or redirect to one.
+    a direct audio URL or redirect to one. Retries on rate limiting.
     """
     url = f"{STREAM_ENDPOINT}?track_id={track_id}"
     async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-        try:
-            resp = await client.get(url)
-            if resp.status_code == 200:
-                content_type = resp.headers.get("content-type", "")
-                # If the response is audio, the URL itself is the stream
-                if "audio" in content_type or "mpeg" in content_type:
-                    return str(resp.url)
-                # If JSON, extract the URL
-                try:
-                    data = resp.json()
-                    return data.get("url") or data.get("stream_url")
-                except Exception:
-                    # Might be a direct redirect to audio
-                    return str(resp.url)
-        except Exception as e:
-            logger.warning("Poolsuite stream API failed for track %s: %s", track_id, e)
+        for attempt in range(retries):
+            try:
+                resp = await client.get(url)
+
+                # Handle rate limiting with backoff
+                if resp.status_code == 429:
+                    wait = 2 ** (attempt + 1)
+                    logger.warning("Rate limited on track %s, waiting %ds...", track_id, wait)
+                    await asyncio.sleep(wait)
+                    continue
+
+                if resp.status_code == 200:
+                    content_type = resp.headers.get("content-type", "")
+                    # If the response is audio, the URL itself is the stream
+                    if "audio" in content_type or "mpeg" in content_type:
+                        return str(resp.url)
+                    # If JSON, extract the URL
+                    try:
+                        data = resp.json()
+                        return data.get("url") or data.get("stream_url")
+                    except Exception:
+                        # Might be a direct redirect to audio
+                        return str(resp.url)
+            except Exception as e:
+                logger.warning("Poolsuite stream API failed for track %s: %s", track_id, e)
     return None
