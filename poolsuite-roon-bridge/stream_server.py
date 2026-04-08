@@ -301,114 +301,271 @@ class RadioServer:
         all_channels = ["All"] + self._available_channels
         for ch in all_channels:
             is_current = (ch == self._current_channel)
-            bg = "#64dfdf" if is_current else "rgba(224,214,138,0.15)"
-            color = "#1a1a2e" if is_current else "#e0d68a"
-            border = "2px solid #64dfdf" if is_current else "2px solid rgba(224,214,138,0.3)"
             channel_buttons += (
-                f'<a href="/channel?name={ch}" style="display: inline-block; '
-                f'padding: 0.5em 1.2em; margin: 0.3em; background: {bg}; color: {color}; '
-                f'text-decoration: none; font-weight: bold; border: {border}; '
-                f'border-radius: 4px;">{ch}</a>\n'
+                f'<a href="/channel?name={ch}" class="ch-btn'
+                f'{" ch-active" if is_current else ""}">{ch}</a>\n'
             )
+
+        now_playing_link = (
+            f'<a href="{self._now_playing_url}" target="_blank" class="np-title">'
+            f'{self._now_playing}</a>'
+            if getattr(self, "_now_playing_url", None)
+            else f'<span class="np-title">{self._now_playing}</span>'
+        )
 
         html = f"""<!DOCTYPE html>
 <html>
 <head>
-  <title>Poolsuite Roon Bridge</title>
+  <title>POOLSUITE FM &mdash; Roon Bridge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body {{ font-family: 'SF Mono', 'Menlo', 'Monaco', monospace; background: #1a1a2e; color: #e0d68a; padding: 2em; max-width: 700px; margin: 0 auto; }}
-    h1 {{ margin-bottom: 0.3em; }}
-    .subtitle {{ color: #64dfdf; margin-top: 0; font-size: 0.85em; }}
-    hr {{ border: none; border-top: 1px solid rgba(224,214,138,0.2); margin: 1.5em 0; }}
-    .now-playing {{ font-size: 1.3em; margin: 0.5em 0; }}
-    .meta {{ color: rgba(224,214,138,0.6); font-size: 0.85em; }}
-    .btn {{ display: inline-block; padding: 0.7em 1.8em; background: #e0d68a; color: #1a1a2e; text-decoration: none; font-weight: bold; font-size: 1em; border-radius: 4px; margin: 0.3em; }}
-    .btn:hover {{ background: #64dfdf; }}
-    .roon-url {{ display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(224,214,138,0.2); border-radius: 6px; padding: 0.6em 1em; margin: 0.5em 0; gap: 0.8em; }}
-    .roon-url code {{ flex: 1; color: #64dfdf; word-break: break-all; font-size: 0.95em; }}
-    .copy-btn {{ background: none; border: 1px solid rgba(224,214,138,0.4); color: #e0d68a; padding: 0.4em 0.8em; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 0.85em; white-space: nowrap; }}
-    .copy-btn:hover {{ background: rgba(224,214,138,0.15); }}
-    .copy-btn.copied {{ border-color: #64dfdf; color: #64dfdf; }}
-    audio {{ width: 100%; margin-top: 1em; }}
-    .section-label {{ color: rgba(224,214,138,0.5); text-transform: uppercase; font-size: 0.75em; letter-spacing: 0.1em; margin-bottom: 0.5em; }}
-    .history {{ background: rgba(255,255,255,0.03); border: 1px solid rgba(224,214,138,0.15); border-radius: 6px; max-height: 400px; overflow-y: auto; }}
-    .history-row {{ display: flex; align-items: center; padding: 0.6em 1em; border-bottom: 1px solid rgba(224,214,138,0.08); gap: 1em; }}
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: linear-gradient(170deg, #0a1628 0%, #162447 40%, #1f4068 70%, #1b3a5c 100%);
+      color: #f0e6d3;
+      min-height: 100vh;
+    }}
+    .container {{ max-width: 520px; margin: 0 auto; padding: 2em 1.5em; }}
+
+    /* Header */
+    .header {{ text-align: center; margin-bottom: 2em; }}
+    .logo {{ font-family: 'Space Mono', monospace; font-size: 0.7em; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(240,230,211,0.5); margin-bottom: 0.5em; }}
+    .title {{ font-family: 'Space Mono', monospace; font-size: 2em; font-weight: 700; background: linear-gradient(135deg, #ffd700, #ff8c42, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }}
+    .tagline {{ font-size: 0.8em; color: rgba(240,230,211,0.4); margin-top: 0.4em; font-family: 'Space Mono', monospace; }}
+
+    /* Now Playing Card */
+    .np-card {{
+      background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,140,66,0.08));
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 12px;
+      padding: 1.5em;
+      margin-bottom: 1.5em;
+      position: relative;
+      overflow: hidden;
+    }}
+    .np-card::before {{
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(ellipse at 30% 50%, rgba(255,215,0,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }}
+    .np-label {{ font-family: 'Space Mono', monospace; font-size: 0.65em; letter-spacing: 0.2em; text-transform: uppercase; color: #ffd700; margin-bottom: 0.6em; }}
+    .np-title {{ font-size: 1.3em; font-weight: 700; color: #f0e6d3; text-decoration: none; display: block; line-height: 1.3; }}
+    a.np-title:hover {{ color: #ffd700; }}
+    .np-meta {{ font-size: 0.75em; color: rgba(240,230,211,0.45); margin-top: 0.6em; font-family: 'Space Mono', monospace; }}
+
+    /* Transport */
+    .transport {{ display: flex; justify-content: center; gap: 0.8em; margin-bottom: 1.5em; }}
+    .t-btn {{
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50%;
+      color: #f0e6d3;
+      text-decoration: none;
+      font-size: 1.2em;
+      transition: all 0.15s;
+    }}
+    .t-btn:hover {{ background: rgba(255,215,0,0.2); border-color: rgba(255,215,0,0.4); color: #ffd700; }}
+
+    /* Section */
+    .section {{ margin-bottom: 1.5em; }}
+    .section-label {{
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6em;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(240,230,211,0.35);
+      margin-bottom: 0.8em;
+    }}
+
+    /* Channels */
+    .channels {{ display: flex; flex-wrap: wrap; gap: 0.4em; }}
+    .ch-btn {{
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7em;
+      padding: 0.5em 1em;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      color: rgba(240,230,211,0.7);
+      text-decoration: none;
+      transition: all 0.15s;
+    }}
+    .ch-btn:hover {{ background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.3); color: #ffd700; }}
+    .ch-active {{ background: rgba(255,215,0,0.2); border-color: #ffd700; color: #ffd700; }}
+
+    /* Audio player */
+    audio {{ width: 100%; margin-top: 0.5em; border-radius: 8px; }}
+
+    /* Roon URL */
+    .roon-box {{
+      display: flex; align-items: center;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 0.7em 1em;
+      gap: 0.8em;
+      margin-top: 0.5em;
+    }}
+    .roon-box code {{ flex: 1; font-family: 'Space Mono', monospace; font-size: 0.8em; color: #ffd700; word-break: break-all; }}
+    .roon-box .label {{ font-size: 0.7em; color: rgba(240,230,211,0.35); white-space: nowrap; }}
+    .copy-btn {{
+      font-family: 'Space Mono', monospace;
+      background: rgba(255,215,0,0.15);
+      border: 1px solid rgba(255,215,0,0.3);
+      color: #ffd700;
+      padding: 0.35em 0.8em;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.7em;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+    }}
+    .copy-btn:hover {{ background: rgba(255,215,0,0.3); }}
+    .copy-btn.copied {{ background: rgba(255,215,0,0.4); }}
+
+    /* Divider */
+    .divider {{ border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 1.5em 0; }}
+
+    /* History */
+    .history {{
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+    }}
+    .history::-webkit-scrollbar {{ width: 4px; }}
+    .history::-webkit-scrollbar-thumb {{ background: rgba(255,215,0,0.2); border-radius: 2px; }}
+    .history-row {{
+      display: flex; align-items: center;
+      padding: 0.7em 1em;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 0.8em;
+      transition: background 0.1s;
+    }}
+    .history-row:hover {{ background: rgba(255,255,255,0.03); }}
     .history-row:last-child {{ border-bottom: none; }}
-    .history-row:first-child {{ background: rgba(100,223,223,0.08); }}
-    .history-row .track-title {{ flex: 1; font-size: 0.9em; }}
-    .history-row .track-title strong {{ color: #64dfdf; }}
-    .history-row .track-time {{ color: rgba(224,214,138,0.4); font-size: 0.8em; white-space: nowrap; }}
-    .history-row .track-num {{ color: rgba(224,214,138,0.3); font-size: 0.75em; min-width: 1.5em; text-align: right; }}
-    .history-empty {{ padding: 2em; text-align: center; color: rgba(224,214,138,0.3); }}
-    .sc-link {{ display: inline-block; background: #f50; color: #fff; font-size: 0.6em; padding: 0.2em 0.5em; border-radius: 3px; text-decoration: none; margin-left: 0.5em; vertical-align: middle; font-weight: bold; letter-spacing: 0.05em; }}
-    .sc-link:hover {{ background: #ff6a1a; }}
+    .history-row:first-child {{ background: rgba(255,215,0,0.06); }}
+    .history-row .track-num {{
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65em;
+      color: rgba(240,230,211,0.25);
+      min-width: 2.5em;
+      text-align: right;
+    }}
+    .history-row:first-child .track-num {{ color: #ffd700; font-weight: 700; }}
+    .history-row .track-title {{ flex: 1; font-size: 0.85em; line-height: 1.3; }}
+    .history-row .track-title a {{ color: #f0e6d3; text-decoration: none; }}
+    .history-row .track-title a:hover {{ color: #ffd700; }}
+    .history-row .track-title strong {{ color: rgba(255,215,0,0.85); font-weight: 600; }}
+    .history-row .track-time {{
+      font-family: 'Space Mono', monospace;
+      color: rgba(240,230,211,0.25);
+      font-size: 0.65em;
+      white-space: nowrap;
+    }}
+    .history-empty {{ padding: 2em; text-align: center; color: rgba(240,230,211,0.25); font-size: 0.85em; }}
+
+    /* Footer */
+    .footer {{ text-align: center; margin-top: 2em; font-size: 0.7em; color: rgba(240,230,211,0.2); font-family: 'Space Mono', monospace; }}
+    .footer a {{ color: rgba(255,215,0,0.4); text-decoration: none; }}
+    .footer a:hover {{ color: #ffd700; }}
   </style>
   <script>
     function copyUrl(btn, url) {{
       navigator.clipboard.writeText(url).then(() => {{
-        btn.textContent = 'Copied!';
+        btn.textContent = 'COPIED';
         btn.classList.add('copied');
-        setTimeout(() => {{ btn.textContent = 'Copy'; btn.classList.remove('copied'); }}, 2000);
+        setTimeout(() => {{ btn.textContent = 'COPY'; btn.classList.remove('copied'); }}, 2000);
       }});
     }}
   </script>
 </head>
 <body>
-  <h1>Poolsuite &rarr; Roon</h1>
-  <p class="subtitle">Local bridge &middot; {ip}</p>
+<div class="container">
 
-  <div class="now-playing">Now Playing: {f'<a href="{self._now_playing_url}" target="_blank" style="color: #e0d68a; text-decoration: none; border-bottom: 1px solid rgba(224,214,138,0.3);"><strong>{self._now_playing}</strong></a>' if getattr(self, "_now_playing_url", None) else f'<strong>{self._now_playing}</strong>'}</div>
-  <p class="meta">Channel: {self._current_channel} &middot; {len(self._listeners)} listener{"s" if len(self._listeners) != 1 else ""} &middot; {self._tracks_played} tracks played</p>
-
-  <div style="margin: 1.2em 0;">
-    <a href="/prev" class="btn">&laquo; Previous</a>
-    <a href="/skip" class="btn">Next &raquo;</a>
+  <div class="header">
+    <div class="logo">Poolsuite FM</div>
+    <div class="title">Roon Bridge</div>
+    <div class="tagline">{ip} &middot; port {self.port}</div>
   </div>
 
-  <hr>
-  <p class="section-label">Channels</p>
-  <div style="margin: 0.3em 0 1em 0;">{channel_buttons}</div>
-
-  <hr>
-  <p class="section-label">Listen in browser</p>
-  <audio controls src="/stream"></audio>
-
-  <hr>
-  <p class="section-label">Add to Roon &mdash; Live Radio</p>
-
-  <div class="roon-url">
-    <code>{base}/stream</code>
-    <button class="copy-btn" onclick="copyUrl(this, '{base}/stream')">Copy</button>
+  <div class="np-card">
+    <div class="np-label">Now Playing</div>
+    {now_playing_link}
+    <div class="np-meta">{self._current_channel} &middot; {len(self._listeners)} listener{"s" if len(self._listeners) != 1 else ""} &middot; {self._tracks_played} played</div>
   </div>
 
-  <hr>
-  <p class="section-label">Endpoints</p>
-
-  <div class="roon-url">
-    <code>{base}/stream</code>
-    <span class="meta" style="white-space:nowrap;">MP3 stream</span>
-    <button class="copy-btn" onclick="copyUrl(this, '{base}/stream')">Copy</button>
-  </div>
-  <div class="roon-url">
-    <code>{base}/status</code>
-    <span class="meta" style="white-space:nowrap;">JSON status</span>
-    <button class="copy-btn" onclick="copyUrl(this, '{base}/status')">Copy</button>
-  </div>
-  <div class="roon-url">
-    <code>{base}/skip</code>
-    <span class="meta" style="white-space:nowrap;">Skip track</span>
-    <button class="copy-btn" onclick="copyUrl(this, '{base}/skip')">Copy</button>
-  </div>
-  <div class="roon-url">
-    <code>{base}/prev</code>
-    <span class="meta" style="white-space:nowrap;">Previous track</span>
-    <button class="copy-btn" onclick="copyUrl(this, '{base}/prev')">Copy</button>
+  <div class="transport">
+    <a href="/prev" class="t-btn" title="Previous">&laquo;</a>
+    <a href="/skip" class="t-btn" title="Next">&raquo;</a>
   </div>
 
-  <hr>
-  <p class="section-label">Play History</p>
-  <div class="history">{self._render_history()}</div>
+  <div class="section">
+    <div class="section-label">Channels</div>
+    <div class="channels">{channel_buttons}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Listen in Browser</div>
+    <audio controls src="/stream"></audio>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-label">Add to Roon</div>
+    <div class="roon-box">
+      <code>{base}/stream</code>
+      <button class="copy-btn" onclick="copyUrl(this, '{base}/stream')">COPY</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Endpoints</div>
+    <div class="roon-box">
+      <code>{base}/stream</code>
+      <span class="label">MP3</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{base}/stream')">COPY</button>
+    </div>
+    <div class="roon-box" style="margin-top:0.4em;">
+      <code>{base}/status</code>
+      <span class="label">JSON</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{base}/status')">COPY</button>
+    </div>
+    <div class="roon-box" style="margin-top:0.4em;">
+      <code>{base}/skip</code>
+      <span class="label">Skip</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{base}/skip')">COPY</button>
+    </div>
+    <div class="roon-box" style="margin-top:0.4em;">
+      <code>{base}/prev</code>
+      <span class="label">Prev</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{base}/prev')">COPY</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section">
+    <div class="section-label">Play History</div>
+    <div class="history">{self._render_history()}</div>
+  </div>
+
+  <div class="footer">
+    <a href="https://poolsuite.net" target="_blank">poolsuite.net</a> &middot;
+    <a href="https://github.com/thepeterberg/poolsuite-roon-streaming" target="_blank">github</a>
+  </div>
+
+</div>
 </body>
 </html>"""
         return web.Response(text=html, content_type="text/html")
