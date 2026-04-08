@@ -55,13 +55,26 @@ def load_config(path: str | None) -> dict:
     return config
 
 
-async def stream_track(server: RadioServer, audio_url: str, bitrate: str) -> bool:
+async def stream_track(
+    server: RadioServer,
+    audio_url: str,
+    bitrate: str,
+    stop_silence: asyncio.Event | None = None,
+) -> bool:
     """Stream a single track through ffmpeg to all connected listeners.
+
+    Args:
+        server: The radio server to push audio to.
+        audio_url: Direct URL to the audio source.
+        bitrate: Target MP3 bitrate.
+        stop_silence: If provided, this event is set once the first audio
+            chunk arrives, signaling the caller to stop any gap-filling silence.
 
     Returns True if the track completed naturally, False on error.
     Raises asyncio.CancelledError if skipped.
     """
     proc = await transcode_to_mp3_stream(audio_url, bitrate=bitrate)
+    first_chunk = True
 
     try:
         while True:
@@ -80,6 +93,12 @@ async def stream_track(server: RadioServer, audio_url: str, bitrate: str) -> boo
                 continue
             if not chunk:
                 break
+
+            # Signal that real audio is flowing — stop gap-filling silence
+            if first_chunk and stop_silence is not None:
+                stop_silence.set()
+                first_chunk = False
+
             await server.push_audio(chunk)
     except asyncio.CancelledError:
         raise
@@ -150,6 +169,11 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         # Pre-resolve the first track
         next_resolved: tuple[str, str | None] | None = None
         next_resolve_task: asyncio.Task | None = None
+        # Silence pump keeps the stream alive during track transitions.
+        # It's started after each track ends and stopped when the next
+        # track's ffmpeg produces its first audio chunk.
+        silence_stop: asyncio.Event | None = None
+        silence_task: asyncio.Task | None = None
 
         for i, track in enumerate(queue):
             # Use pre-resolved result if available, otherwise resolve now
@@ -174,33 +198,41 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
 
             server.set_now_playing(display)
 
+            # Pass the current silence_stop event to stream_track.
+            # When ffmpeg produces its first chunk, it sets this event,
+            # which stops the silence pump from the PREVIOUS transition.
             try:
-                success = await stream_track(server, audio_url, bitrate)
+                success = await stream_track(
+                    server, audio_url, bitrate, stop_silence=silence_stop
+                )
                 if not success:
                     logger.warning("Track failed to stream: %s", display)
             except asyncio.CancelledError:
                 # Track was skipped
                 pass
 
-            # Push silence gap between tracks
-            if silence:
-                await server.push_audio(silence)
+            # Track ended — immediately start pumping silence so the
+            # stream never goes dead. This pump runs until the NEXT
+            # track's ffmpeg starts producing audio.
+            silence_stop = asyncio.Event()
+            if silence_task and not silence_task.done():
+                silence_task.cancel()
+            silence_task = asyncio.create_task(
+                keep_alive_silence(server, silence_stop, bitrate)
+            )
 
             # Wait for next track resolution if it's still in progress
-            if next_resolve_task is not None:
-                # Keep pushing silence while we wait
-                stop_silence = asyncio.Event()
-
-                async def _wait_and_stop():
-                    nonlocal next_resolved
-                    next_resolved = await next_resolve_task
-                    stop_silence.set()
-
-                wait_task = asyncio.create_task(_wait_and_stop())
-                if not stop_silence.is_set():
-                    await keep_alive_silence(server, stop_silence, bitrate)
-                await wait_task
+            if next_resolve_task is not None and not next_resolve_task.done():
+                next_resolved = await next_resolve_task
                 next_resolve_task = None
+            elif next_resolve_task is not None:
+                next_resolved = next_resolve_task.result()
+                next_resolve_task = None
+
+        # Clean up silence pump at end of playlist
+        if silence_task and not silence_task.done():
+            silence_stop.set()
+            silence_task.cancel()
 
         logger.info("Playlist complete, reshuffling...")
 
