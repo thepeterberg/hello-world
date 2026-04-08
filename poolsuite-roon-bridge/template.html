@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>POOLSUITE FM &mdash; Poolside Roon Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* === THEME VARIABLES === */
+    :root {
+      --bg: linear-gradient(170deg, #1a0a2e 0%, #16213e 30%, #0f3460 60%, #1a3a4a 100%);
+      --text: #f0e6d3;
+      --text-mid: rgba(240,230,211,0.7);
+      --text-dim: rgba(240,230,211,0.45);
+      --pink: #e88aaf;
+      --pink-dim: rgba(255,180,200,0.7);
+      --pink-glow: rgba(255,107,157,0.12);
+      --cyan: #a5f3fc;
+      --cyan-solid: #7dd8e8;
+      --cyan-dim: rgba(103,232,249,0.7);
+      --cyan-glow: rgba(103,232,249,0.12);
+      --lcd-text: #c4f5fd;
+      --lcd-meta: #6dcad9;
+      --lcd-bg: linear-gradient(180deg, #060a14, #0a0f1c, #080d18);
+      --lcd-border: #0a0a12;
+      --stereo-bg: linear-gradient(180deg, #22223a 0%, #1a1a2e 40%, #151528 100%);
+      --stereo-border: rgba(255,255,255,0.07);
+      --card-bg: rgba(0,0,0,0.25);
+      --card-border: rgba(255,255,255,0.08);
+      --btn-bg: rgba(255,255,255,0.05);
+      --btn-border: rgba(255,255,255,0.12);
+      --dial-bg: rgba(0,0,0,0.2);
+      --dial-mark: rgba(255,180,200,0.3);
+      --dial-mark-strong: rgba(255,180,200,0.5);
+      --dial-num: rgba(255,180,200,0.55);
+      --history-hover: rgba(255,255,255,0.03);
+      --history-now: rgba(255,107,157,0.06);
+      --divider: rgba(255,255,255,0.06);
+      --scrollbar: rgba(255,107,157,0.25);
+      --title-grad: linear-gradient(135deg, #ff6b9d, #ffa8cc, #c084fc, #67e8f9);
+      --section-label: #e88aaf;
+      --ch-border: rgba(255,180,200,0.18);
+      --ch-text: rgba(240,230,211,0.7);
+      --footer-text: rgba(240,230,211,0.45);
+      --footer-link: rgba(240,230,211,0.4);
+    }
+    [data-theme="light"] {
+      --bg: linear-gradient(170deg, #eef7f5 0%, #e4f0ee 30%, #f0f5f0 60%, #f5f8f5 100%);
+      --text: #1a2a25;
+      --text-mid: #2d4a40;
+      --text-dim: #5a7a70;
+      --pink: #b84068;
+      --pink-dim: #c45070;
+      --pink-glow: rgba(184,64,104,0.08);
+      --cyan: #087078;
+      --cyan-solid: #087078;
+      --cyan-dim: #0a8a92;
+      --cyan-glow: rgba(8,112,120,0.06);
+      --lcd-text: #b0f0f8;
+      --lcd-meta: #80d8e4;
+      --lcd-bg: linear-gradient(180deg, #0c1a1e, #0a1418, #0c1a1c);
+      --lcd-border: #081214;
+      --stereo-bg: linear-gradient(180deg, #3a5a54 0%, #2e4a44 40%, #243e38 100%);
+      --stereo-border: rgba(0,0,0,0.2);
+      --card-bg: rgba(0,60,50,0.05);
+      --card-border: rgba(0,60,50,0.12);
+      --btn-bg: rgba(0,60,50,0.06);
+      --btn-border: rgba(0,60,50,0.15);
+      --dial-bg: rgba(0,0,0,0.12);
+      --dial-mark: rgba(180,220,210,0.3);
+      --dial-mark-strong: rgba(180,220,210,0.55);
+      --dial-num: rgba(200,230,220,0.6);
+      --history-hover: rgba(0,60,50,0.04);
+      --history-now: rgba(184,64,104,0.06);
+      --divider: rgba(0,60,50,0.1);
+      --scrollbar: rgba(8,112,120,0.2);
+      --title-grad: linear-gradient(135deg, #b84068, #d06888, #7c4ddb, #087078);
+      --section-label: #b84068;
+      --ch-border: rgba(0,60,50,0.15);
+      --ch-text: #2d4a40;
+      --footer-text: #5a7a70;
+      --footer-link: #4a6a60;
+      --copy-bg: rgba(8,112,120,0.12);
+      --copy-border: rgba(8,112,120,0.3);
+      --copy-text: #087078;
+    }
+
+    /* Light mode: stereo internals stay light-on-dark */
+    [data-theme="light"] .stereo .t-btn { color: rgba(200,220,215,0.8); border-color: rgba(200,220,215,0.2); background: rgba(255,255,255,0.06); }
+    [data-theme="light"] .stereo .t-btn:hover { color: #a5f3fc; border-color: rgba(165,243,252,0.4); background: rgba(165,243,252,0.1); }
+    [data-theme="light"] .stereo .t-btn-play { color: #a5f3fc; border-color: rgba(165,243,252,0.3); background: rgba(165,243,252,0.1); }
+    [data-theme="light"] .stereo .ch-btn { color: rgba(200,220,215,0.7); border-color: rgba(200,220,215,0.15); background: rgba(255,255,255,0.04); }
+    [data-theme="light"] .stereo .ch-btn:hover { color: #a5f3fc; border-color: rgba(165,243,252,0.3); background: rgba(165,243,252,0.08); }
+    [data-theme="light"] .stereo .ch-active { color: #a5f3fc; border-color: #67e8f9; background: rgba(103,232,249,0.12); }
+    [data-theme="light"] .roon-box code { color: #065a64; }
+    [data-theme="light"] .copy-btn { background: #065a64; border-color: #065a64; color: #eef7f5; }
+    [data-theme="light"] .copy-btn:hover { background: #087078; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    .container { max-width: 660px; margin: 0 auto; padding: 1.5em 1.5em; font-size: 1.05em; position: relative; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      position: absolute;
+      top: 0.5em; right: 0;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65em;
+      letter-spacing: 0.1em;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 20px;
+      color: var(--text-mid);
+      padding: 0.4em 1em;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; gap: 0.4em;
+    }
+    .theme-toggle:hover { border-color: var(--pink); color: var(--pink); }
+    .theme-toggle svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 1.2em; }
+    .logo { font-family: 'Space Mono', monospace; font-size: 0.8em; letter-spacing: 0.35em; text-transform: uppercase; color: var(--pink-dim); margin-bottom: 0.5em; }
+    .title { font-family: 'Space Mono', monospace; font-size: 1.8em; font-weight: 700; background: var(--title-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
+    .tagline { font-size: 0.85em; color: var(--text-mid); margin-top: 0.4em; font-family: 'Space Mono', monospace; }
+
+    /* === THE STEREO === */
+    .stereo {
+      background: var(--stereo-bg);
+      border: 2px solid var(--stereo-border);
+      border-top-color: var(--stereo-border);
+      border-radius: 18px;
+      padding: 0;
+      position: relative;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 8px 32px rgba(0,0,0,0.4),
+        0 2px 8px rgba(0,0,0,0.3);
+      overflow: hidden;
+      margin-bottom: 1.2em;
+    }
+    .stereo-top {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+      padding: 1em 1.3em 0 1.3em;
+    }
+    .stereo-brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6em;
+    }
+    .stereo-brand-name {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6em;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(200,220,215,0.7);
+    }
+    .stereo-brand-model {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55em;
+      letter-spacing: 0.15em;
+      color: rgba(200,220,215,0.45);
+    }
+
+    /* LCD Display */
+    .lcd {
+      background: var(--lcd-bg);
+      border: 2px solid var(--lcd-border);
+      border-radius: 10px;
+      padding: 1em 1.2em;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        inset 0 2px 8px rgba(0,0,0,0.5),
+        0 1px 0 rgba(255,255,255,0.04);
+    }
+    .lcd::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .lcd::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, rgba(103,232,249,0.02), transparent);
+      pointer-events: none;
+    }
+    .lcd-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4em;
+      position: relative;
+      z-index: 2;
+    }
+    .lcd-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65em;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--cyan-solid);
+      text-shadow: 0 0 6px var(--cyan-glow);
+    }
+    .lcd-dot {
+      width: 6px; height: 6px;
+      background: #ff6b9d;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(255,107,157,0.6);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Scrolling song title */
+    .lcd-marquee {
+      overflow: hidden;
+      position: relative;
+      z-index: 2;
+      min-height: 1.8em;
+      margin: 0.3em 0;
+      cursor: pointer;
+    }
+    .lcd-marquee-inner {
+      display: inline-block;
+      white-space: nowrap;
+      font-family: 'Space Mono', monospace;
+      font-size: 1.3em;
+      font-weight: 700;
+      color: var(--lcd-text);
+      text-shadow: 0 0 6px rgba(103,232,249,0.8), 0 0 20px rgba(103,232,249,0.4);
+      animation: scroll-left 25s linear infinite;
+      padding-left: 100%;
+    }
+    .lcd-marquee.paused .lcd-marquee-inner {
+      animation: none;
+      padding-left: 0;
+      white-space: nowrap;
+      text-align: center;
+      display: block;
+    }
+    .lcd-marquee-inner a { color: inherit; text-decoration: none; }
+    .lcd-marquee-inner a:hover { color: #fff; }
+    @keyframes scroll-left {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .lcd-meta {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7em;
+      color: var(--lcd-meta);
+      text-shadow: 0 0 4px var(--cyan-glow);
+      margin-top: 0.4em;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Transport below LCD */
+    .stereo-transport {
+      display: flex;
+      justify-content: center;
+      gap: 0.5em;
+      padding: 0.6em 1.3em;
+    }
+    .t-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.4em;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      border-radius: 8px;
+      color: var(--text-mid);
+      text-decoration: none;
+      padding: 0.5em 1em;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72em;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+      min-width: 70px;
+    }
+    .t-btn:hover { background: var(--pink-glow); border-color: var(--pink); color: var(--pink); }
+    .t-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+    .t-btn-play {
+      background: var(--cyan-glow);
+      border-color: var(--cyan-dim);
+      color: var(--cyan);
+      min-width: 80px;
+    }
+    .t-btn-play:hover { background: rgba(103,232,249,0.25); border-color: rgba(103,232,249,0.5); color: #c4f5fd; }
+    .t-btn-play svg { width: 16px; height: 16px; }
+
+    /* Chrome divider */
+    .chrome {
+      height: 3px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Dial section */
+    .dial-section {
+      padding: 0.7em 1.3em 0.4em 1.3em;
+    }
+    .dial-section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6em;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(180,220,210,0.7);
+      text-align: center;
+      margin-bottom: 0.8em;
+    }
+
+    /* Analog dial */
+    .dial-housing {
+      background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.1));
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 1em 1.2em;
+      position: relative;
+    }
+    .dial-scale {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 0.3em;
+      margin-bottom: 0.5em;
+    }
+    .dial-mark {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .dial-mark-line { width: 1px; height: 12px; background: rgba(255,180,200,0.3); }
+    .dial-mark-line.tall { height: 18px; background: rgba(255,180,200,0.5); }
+    .dial-mark-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.55em;
+      color: rgba(255,180,200,0.55);
+    }
+    .dial-groove {
+      position: relative;
+      height: 6px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 3px;
+      margin: 0 0.3em;
+    }
+    .dial-groove-fill {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 12%;
+      background: linear-gradient(90deg, rgba(255,107,157,0.15), rgba(255,107,157,0.05));
+      border-radius: 3px 0 0 3px;
+    }
+    .dial-needle {
+      position: absolute;
+      top: -8px;
+      left: 10%;
+      width: 3px;
+      height: 22px;
+      background: linear-gradient(180deg, #ff6b9d, #ff3d7f);
+      border-radius: 2px;
+      box-shadow: 0 0 6px rgba(255,107,157,0.6), 0 0 16px rgba(255,107,157,0.2);
+      transition: left 0.4s ease;
+    }
+    .dial-needle::before {
+      content: '';
+      position: absolute;
+      top: -3px; left: -2px;
+      width: 7px; height: 7px;
+      background: #ff6b9d;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255,107,157,0.8);
+    }
+
+    /* Channel Buttons */
+    .ch-section { padding: 0 1.3em 1em 1.3em; }
+    .ch-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5em;
+    }
+    .ch-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72em;
+      padding: 0.5em 1em;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--ch-border);
+      border-radius: 6px;
+      color: var(--ch-text);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .ch-btn:hover {
+      background: rgba(255,107,157,0.12);
+      border-color: rgba(255,107,157,0.35);
+      color: #ffa8cc;
+    }
+    .ch-active {
+      background: linear-gradient(135deg, rgba(255,107,157,0.2), rgba(192,132,252,0.12));
+      border-color: #ff6b9d;
+      color: #ffa8cc;
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(255,107,157,0.12);
+    }
+
+    /* Section */
+    .section { margin-bottom: 1em; }
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8em;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--section-label);
+      margin-bottom: 0.6em;
+    }
+
+    /* Audio player */
+    audio { width: 100%; margin-top: 0.5em; border-radius: 8px; }
+
+    /* Roon URL */
+    .roon-box {
+      display: flex; align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 0.45em 0.8em;
+      gap: 0.6em;
+      margin-top: 0.35em;
+    }
+    .roon-box code { flex: 1; font-family: 'Space Mono', monospace; font-size: 0.75em; color: var(--cyan-solid); word-break: break-all; }
+    .roon-box .label { font-size: 0.7em; color: var(--text-mid); white-space: nowrap; }
+    .roon-box-lg { padding: 0.6em 1em; }
+    .roon-box-lg code { font-size: 0.85em; }
+    .copy-btn {
+      font-family: 'Space Mono', monospace;
+      background: var(--copy-bg, rgba(103,232,249,0.12));
+      border: 1px solid var(--copy-border, rgba(103,232,249,0.3));
+      color: var(--copy-text, #67e8f9);
+      padding: 0.3em 0.7em;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.7em;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { background: rgba(103,232,249,0.25); }
+    .copy-btn.copied { background: rgba(103,232,249,0.35); }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid var(--divider); margin: 1em 0; }
+
+    /* History */
+    .history {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .history::-webkit-scrollbar { width: 4px; }
+    .history::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 2px; }
+    .history-row {
+      display: flex; align-items: center;
+      padding: 0.55em 0.8em;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 0.7em;
+      transition: background 0.1s;
+    }
+    .history-row:hover { background: var(--history-hover); }
+    .history-row:last-child { border-bottom: none; }
+    .history-row:first-child { background: var(--history-now); }
+    .history-row .track-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75em;
+      color: rgba(240,230,211,0.4);
+      min-width: 2.5em;
+      text-align: right;
+    }
+    .history-row:first-child .track-num { color: #ff6b9d; font-weight: 700; }
+    .history-row .track-title { flex: 1; font-size: 0.95em; line-height: 1.3; }
+    .history-row .track-title a { color: var(--text); text-decoration: none; }
+    .history-row .track-title a:hover { color: var(--pink); }
+    .history-row .track-title strong { color: var(--pink); font-weight: 600; }
+    .history-row .track-time {
+      font-family: 'Space Mono', monospace;
+      color: rgba(240,230,211,0.45);
+      font-size: 0.75em;
+      white-space: nowrap;
+    }
+    .history-empty { padding: 2em; text-align: center; color: rgba(240,230,211,0.4); font-size: 0.9em; }
+
+    /* Footer */
+    .footer { text-align: center; margin-top: 1.2em; font-family: 'Space Mono', monospace; }
+    .footer-vibes { font-size: 0.8em; color: var(--footer-text); margin-bottom: 0.8em; font-style: italic; }
+    .footer-vibes a { color: var(--pink); text-decoration: none; }
+    .footer-vibes a:hover { color: #ffa8cc; }
+    .footer-links { display: flex; justify-content: center; align-items: center; gap: 1.2em; }
+    .footer-links a { color: var(--footer-link); text-decoration: none; font-size: 0.75em; display: flex; align-items: center; gap: 0.3em; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--pink); }
+    .footer-links svg { width: 16px; height: 16px; fill: currentColor; }
+  </style>
+  <script>
+    function copyUrl(btn, url) {
+      navigator.clipboard.writeText(url).then(() => {
+        btn.textContent = 'COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const label = document.getElementById('themeLabel');
+      const icon = document.getElementById('themeIcon');
+      if (html.getAttribute('data-theme') === 'light') {
+        html.removeAttribute('data-theme');
+        label.textContent = 'LIGHT';
+        icon.innerHTML = '<path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>';
+      } else {
+        html.setAttribute('data-theme', 'light');
+        label.textContent = 'DARK';
+        icon.innerHTML = '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>';
+      }
+    }
+
+    // Play/Pause toggle
+    function togglePlayPause(e) {
+      e.preventDefault();
+      const playIcon = document.getElementById('playIcon');
+      const pauseIcon = document.getElementById('pauseIcon');
+      const label = document.getElementById('playPauseLabel');
+      const audio = document.querySelector('audio');
+      if (playIcon.style.display === 'none') {
+        playIcon.style.display = '';
+        pauseIcon.style.display = 'none';
+        label.textContent = 'PLAY';
+        if (audio) audio.pause();
+      } else {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = '';
+        label.textContent = 'PAUSE';
+        if (audio) audio.play();
+      }
+    }
+
+    // Hover on marquee: stop scroll, show single title scaled to fit
+    document.addEventListener('DOMContentLoaded', () => {
+      const marquee = document.querySelector('.lcd-marquee');
+      const inner = marquee.querySelector('.lcd-marquee-inner');
+      const originalHTML = inner.innerHTML;
+      const title = marquee.dataset.title;
+      const url = marquee.dataset.url;
+
+      marquee.addEventListener('mouseenter', () => {
+        marquee.classList.add('paused');
+        const link = url
+          ? `<a href="${url}" target="_blank">${title}</a>`
+          : title;
+        inner.innerHTML = link;
+        // Scale down font until it fits in the container width
+        let fontSize = 1.3;
+        inner.style.fontSize = fontSize + 'em';
+        while (inner.scrollWidth > marquee.clientWidth && fontSize > 0.6) {
+          fontSize -= 0.05;
+          inner.style.fontSize = fontSize + 'em';
+        }
+      });
+
+      marquee.addEventListener('mouseleave', () => {
+        marquee.classList.remove('paused');
+        inner.innerHTML = originalHTML;
+        inner.style.fontSize = '';
+      });
+    });
+
+    // Move dial needle when a channel is clicked
+    document.addEventListener('DOMContentLoaded', () => {
+      const buttons = document.querySelectorAll('.ch-btn');
+      const needle = document.querySelector('.dial-needle');
+      const fill = document.querySelector('.dial-groove-fill');
+      const lcdChannel = document.querySelector('.lcd-channel-name');
+      const total = buttons.length;
+
+      buttons.forEach((btn, i) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          // Remove active from all, add to clicked
+          buttons.forEach(b => b.classList.remove('ch-active'));
+          btn.classList.add('ch-active');
+          // Move needle: spread positions across 5%-90%
+          const pct = 5 + (i / (total - 1)) * 85;
+          needle.style.left = pct + '%';
+          fill.style.width = pct + '%';
+          // Update LCD channel name
+          if (lcdChannel) lcdChannel.textContent = 'CH: ' + btn.textContent;
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+<div class="container">
+
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <svg viewBox="0 0 24 24" id="themeIcon"><path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+    <span id="themeLabel">LIGHT</span>
+  </button>
+
+  <div class="header">
+    <div class="logo">Poolsuite FM &rarr; Roon</div>
+    <div class="title">Poolside Roon Service</div>
+    <div class="tagline">{{IP}} &middot; port {{PORT}}</div>
+  </div>
+
+  <!-- === THE STEREO UNIT === -->
+  <div class="stereo">
+    <div class="stereo-top">
+      <div class="stereo-brand">
+        <span class="stereo-brand-name">Poolsuite</span>
+        <span class="stereo-brand-model">FM-89 Stereo</span>
+      </div>
+
+      <!-- LCD with scrolling song -->
+      <div class="lcd">
+        <div class="lcd-top-row">
+          <span class="lcd-label">Now Playing</span>
+          <span class="lcd-dot"></span>
+        </div>
+        <div class="lcd-marquee" data-title="{{NOW_PLAYING}}" data-url="{{NOW_PLAYING_URL}}">
+          <span class="lcd-marquee-inner">
+            <a href="{{NOW_PLAYING_URL}}" target="_blank">
+              {{NOW_PLAYING}} &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;
+              {{NOW_PLAYING}} &nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;
+            </a>
+          </span>
+        </div>
+        <div class="lcd-meta">
+          <span class="lcd-channel-name">CH: {{CHANNEL}}</span>
+          <span>{{LISTENERS}} listener{{LISTENERS_S}}</span>
+          <span>{{TRACKS_PLAYED}} played</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transport -->
+    <div class="stereo-transport">
+      <a href="/prev" class="t-btn">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm12 0l-8.5 6L18 18V6z"/></svg>
+        PREV
+      </a>
+      <a href="#" class="t-btn t-btn-play" id="playPauseBtn" onclick="togglePlayPause(event)">
+        <svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg>
+        <svg viewBox="0 0 24 24" id="pauseIcon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="playPauseLabel">PLAY</span>
+      </a>
+      <a href="/skip" class="t-btn">
+        NEXT
+        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </a>
+    </div>
+
+    <div class="chrome"></div>
+
+    <!-- Analog dial -->
+    <div class="dial-section">
+      <div class="dial-section-label">Channel Selector</div>
+      <div class="dial-housing">
+        <div class="dial-scale">
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">88</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">92</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">96</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">100</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">104</div></div>
+          <div class="dial-mark"><div class="dial-mark-line"></div></div>
+          <div class="dial-mark"><div class="dial-mark-line tall"></div><div class="dial-mark-num">108</div></div>
+        </div>
+        <div class="dial-groove">
+          <div class="dial-groove-fill"></div>
+          <div class="dial-needle"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Channel buttons -->
+    <div class="ch-section">
+      <div class="ch-grid">{{CHANNEL_BUTTONS}}</div>
+    </div>
+  </div>
+
+  <!-- Listen -->
+  <div class="section">
+    <div class="section-label">Listen in Browser</div>
+    <audio controls src="/stream"></audio>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Roon -->
+  <div class="section">
+    <div class="section-label">Add to Roon</div>
+    <div class="roon-box roon-box-lg">
+      <code>{{BASE}}/stream</code>
+      <button class="copy-btn" onclick="copyUrl(this, '{{BASE}}/stream')">COPY</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Endpoints</div>
+    <div class="roon-box">
+      <code>{{BASE}}/stream</code>
+      <span class="label">MP3</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{{BASE}}/stream')">COPY</button>
+    </div>
+    <div class="roon-box" style="margin-top:0.4em;">
+      <code>{{BASE}}/status</code>
+      <span class="label">JSON</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{{BASE}}/status')">COPY</button>
+    </div>
+    <div class="roon-box" style="margin-top:0.4em;">
+      <code>{{BASE}}/skip</code>
+      <span class="label">Skip</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{{BASE}}/skip')">COPY</button>
+    </div>
+    <div class="roon-box" style="margin-top:0.4em;">
+      <code>{{BASE}}/prev</code>
+      <span class="label">Prev</span>
+      <button class="copy-btn" onclick="copyUrl(this, '{{BASE}}/prev')">COPY</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- History -->
+  <div class="section">
+    <div class="section-label">Play History</div>
+    <div class="history">{{HISTORY}}</div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-vibes">With appreciation for <a href="https://poolsuite.net" target="_blank">Poolsuite</a>'s immaculate vibes</div>
+    <div class="footer-links">
+      <a href="https://github.com/thepeterberg/poolsuite-roon-streaming" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+      <a href="https://x.com/peter" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        peter
+      </a>
+      <a href="https://pberg.com" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        pberg.com
+      </a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
