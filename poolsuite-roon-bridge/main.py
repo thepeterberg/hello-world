@@ -92,6 +92,32 @@ async def stream_track(server: RadioServer, audio_url: str, bitrate: str) -> boo
     return proc.returncode == 0
 
 
+async def resolve_track(track: dict) -> tuple[str, str | None]:
+    """Resolve a track dict to a (display_name, audio_url) tuple."""
+    track_id = track["track_id"]
+    title = track.get("title") or track.get("name") or f"Track {track_id}"
+    artist = track.get("artist") or track.get("user", {}).get("username") or "Unknown"
+    display = f"{artist} - {title}"
+    sc_url = track.get("permalink_url") or track.get("soundcloud_url")
+
+    audio_url = await get_stream_url_from_api(track_id)
+    if not audio_url:
+        audio_url = await resolve_stream_url(track_id, sc_url)
+
+    return display, audio_url
+
+
+async def keep_alive_silence(server: RadioServer, stop: asyncio.Event, bitrate: str) -> None:
+    """Push silence to keep the stream alive while resolving the next track."""
+    silence_chunk = await generate_silence(1.0, bitrate)
+    while not stop.is_set():
+        await server.push_audio(silence_chunk)
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=1.0)
+        except asyncio.TimeoutError:
+            pass
+
+
 async def playback_loop(server: RadioServer, config: dict) -> None:
     """Main playback loop: fetch playlists, resolve tracks, stream continuously."""
     bitrate = config["bitrate"]
@@ -119,35 +145,60 @@ async def playback_loop(server: RadioServer, config: dict) -> None:
         queue = build_queue(tracks, shuffle=shuffle)
         logger.info("Starting playback of %d tracks", len(queue))
 
-        for track in queue:
-            track_id = track["track_id"]
-            title = track.get("title") or track.get("name") or f"Track {track_id}"
-            artist = track.get("artist") or track.get("user", {}).get("username") or "Unknown"
-            display = f"{artist} - {title}"
-            sc_url = track.get("permalink_url") or track.get("soundcloud_url")
+        # Pre-resolve the first track
+        next_resolved: tuple[str, str | None] | None = None
+        next_resolve_task: asyncio.Task | None = None
 
-            # Try Poolsuite's own stream API first, fall back to yt-dlp
-            audio_url = await get_stream_url_from_api(track_id)
-            if not audio_url:
-                audio_url = await resolve_stream_url(track_id, sc_url)
+        for i, track in enumerate(queue):
+            # Use pre-resolved result if available, otherwise resolve now
+            if next_resolved is not None:
+                display, audio_url = next_resolved
+                next_resolved = None
+            else:
+                display, audio_url = await resolve_track(track)
 
             if not audio_url:
-                logger.warning("Skipping unresolvable track: %s (%s)", display, track_id)
+                logger.warning("Skipping unresolvable track: %s", display)
                 continue
+
+            # Start pre-resolving the NEXT track in the background
+            if i + 1 < len(queue):
+                next_track = queue[i + 1]
+
+                async def _resolve_next(t=next_track):
+                    return await resolve_track(t)
+
+                next_resolve_task = asyncio.create_task(_resolve_next())
 
             server.set_now_playing(display)
 
             try:
                 success = await stream_track(server, audio_url, bitrate)
-                if success and silence:
-                    await server.push_audio(silence)
                 if not success:
                     logger.warning("Track failed to stream: %s", display)
             except asyncio.CancelledError:
-                # Track was skipped — move to the next one
-                if silence:
-                    await server.push_audio(silence)
-                continue
+                # Track was skipped
+                pass
+
+            # Push silence gap between tracks
+            if silence:
+                await server.push_audio(silence)
+
+            # Wait for next track resolution if it's still in progress
+            if next_resolve_task is not None:
+                # Keep pushing silence while we wait
+                stop_silence = asyncio.Event()
+
+                async def _wait_and_stop():
+                    nonlocal next_resolved
+                    next_resolved = await next_resolve_task
+                    stop_silence.set()
+
+                wait_task = asyncio.create_task(_wait_and_stop())
+                if not stop_silence.is_set():
+                    await keep_alive_silence(server, stop_silence, bitrate)
+                await wait_task
+                next_resolve_task = None
 
         logger.info("Playlist complete, reshuffling...")
 
