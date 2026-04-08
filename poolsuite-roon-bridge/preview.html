@@ -47,42 +47,56 @@
       --footer-link: rgba(240,230,211,0.4);
     }
     [data-theme="light"] {
-      --bg: linear-gradient(170deg, #f5efe6 0%, #e8ded0 30%, #daf0ee 60%, #e6f2ef 100%);
-      --text: #2a2a35;
-      --text-mid: rgba(42,42,53,0.7);
-      --text-dim: rgba(42,42,53,0.45);
-      --pink: #c4567a;
-      --pink-dim: #c4567a;
-      --pink-glow: rgba(196,86,122,0.1);
-      --cyan: #0a7e8c;
-      --cyan-solid: #0a7e8c;
-      --cyan-dim: rgba(10,126,140,0.8);
-      --cyan-glow: rgba(10,126,140,0.08);
-      --lcd-text: #065a64;
-      --lcd-meta: #0a7e8c;
-      --lcd-bg: linear-gradient(180deg, #1a2a30, #162428, #1a2a2e);
-      --lcd-border: #0e1c20;
-      --stereo-bg: linear-gradient(180deg, #c8bfb0 0%, #b8ae9e 40%, #a89e8e 100%);
-      --stereo-border: rgba(0,0,0,0.12);
-      --card-bg: rgba(0,0,0,0.06);
-      --card-border: rgba(0,0,0,0.1);
-      --btn-bg: rgba(0,0,0,0.05);
-      --btn-border: rgba(0,0,0,0.12);
-      --dial-bg: rgba(0,0,0,0.08);
-      --dial-mark: rgba(140,80,100,0.25);
-      --dial-mark-strong: rgba(140,80,100,0.45);
-      --dial-num: rgba(60,30,40,0.55);
-      --history-hover: rgba(0,0,0,0.04);
-      --history-now: rgba(196,86,122,0.08);
-      --divider: rgba(0,0,0,0.08);
-      --scrollbar: rgba(196,86,122,0.25);
-      --title-grad: linear-gradient(135deg, #c4567a, #d4789a, #8b5cf6, #0a7e8c);
-      --section-label: #c4567a;
-      --ch-border: rgba(140,80,100,0.2);
-      --ch-text: rgba(42,42,53,0.7);
-      --footer-text: rgba(42,42,53,0.4);
-      --footer-link: rgba(42,42,53,0.35);
+      --bg: linear-gradient(170deg, #eef7f5 0%, #e4f0ee 30%, #f0f5f0 60%, #f5f8f5 100%);
+      --text: #1a2a25;
+      --text-mid: #2d4a40;
+      --text-dim: #5a7a70;
+      --pink: #b84068;
+      --pink-dim: #c45070;
+      --pink-glow: rgba(184,64,104,0.08);
+      --cyan: #087078;
+      --cyan-solid: #087078;
+      --cyan-dim: #0a8a92;
+      --cyan-glow: rgba(8,112,120,0.06);
+      --lcd-text: #b0f0f8;
+      --lcd-meta: #80d8e4;
+      --lcd-bg: linear-gradient(180deg, #0c1a1e, #0a1418, #0c1a1c);
+      --lcd-border: #081214;
+      --stereo-bg: linear-gradient(180deg, #3a5a54 0%, #2e4a44 40%, #243e38 100%);
+      --stereo-border: rgba(0,0,0,0.2);
+      --card-bg: rgba(0,60,50,0.05);
+      --card-border: rgba(0,60,50,0.12);
+      --btn-bg: rgba(0,60,50,0.06);
+      --btn-border: rgba(0,60,50,0.15);
+      --dial-bg: rgba(0,0,0,0.12);
+      --dial-mark: rgba(180,220,210,0.3);
+      --dial-mark-strong: rgba(180,220,210,0.55);
+      --dial-num: rgba(200,230,220,0.6);
+      --history-hover: rgba(0,60,50,0.04);
+      --history-now: rgba(184,64,104,0.06);
+      --divider: rgba(0,60,50,0.1);
+      --scrollbar: rgba(8,112,120,0.2);
+      --title-grad: linear-gradient(135deg, #b84068, #d06888, #7c4ddb, #087078);
+      --section-label: #b84068;
+      --ch-border: rgba(0,60,50,0.15);
+      --ch-text: #2d4a40;
+      --footer-text: #5a7a70;
+      --footer-link: #4a6a60;
+      --copy-bg: rgba(8,112,120,0.12);
+      --copy-border: rgba(8,112,120,0.3);
+      --copy-text: #087078;
     }
+
+    /* Light mode: stereo internals stay light-on-dark */
+    [data-theme="light"] .stereo .t-btn { color: rgba(200,220,215,0.8); border-color: rgba(200,220,215,0.2); background: rgba(255,255,255,0.06); }
+    [data-theme="light"] .stereo .t-btn:hover { color: #a5f3fc; border-color: rgba(165,243,252,0.4); background: rgba(165,243,252,0.1); }
+    [data-theme="light"] .stereo .t-btn-play { color: #a5f3fc; border-color: rgba(165,243,252,0.3); background: rgba(165,243,252,0.1); }
+    [data-theme="light"] .stereo .ch-btn { color: rgba(200,220,215,0.7); border-color: rgba(200,220,215,0.15); background: rgba(255,255,255,0.04); }
+    [data-theme="light"] .stereo .ch-btn:hover { color: #a5f3fc; border-color: rgba(165,243,252,0.3); background: rgba(165,243,252,0.08); }
+    [data-theme="light"] .stereo .ch-active { color: #a5f3fc; border-color: #67e8f9; background: rgba(103,232,249,0.12); }
+    [data-theme="light"] .roon-box code { color: #065a64; }
+    [data-theme="light"] .copy-btn { background: #065a64; border-color: #065a64; color: #eef7f5; }
+    [data-theme="light"] .copy-btn:hover { background: #087078; }
 
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
@@ -96,7 +110,7 @@
     /* Theme toggle */
     .theme-toggle {
       position: absolute;
-      top: 0; right: 1.5em;
+      top: 0.5em; right: 0;
       font-family: 'Space Mono', monospace;
       font-size: 0.65em;
       letter-spacing: 0.1em;
@@ -116,7 +130,7 @@
     .header { text-align: center; margin-bottom: 1.2em; }
     .logo { font-family: 'Space Mono', monospace; font-size: 0.8em; letter-spacing: 0.35em; text-transform: uppercase; color: var(--pink-dim); margin-bottom: 0.5em; }
     .title { font-family: 'Space Mono', monospace; font-size: 1.8em; font-weight: 700; background: var(--title-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
-    .tagline { font-size: 0.85em; color: var(--text-dim); margin-top: 0.4em; font-family: 'Space Mono', monospace; }
+    .tagline { font-size: 0.85em; color: var(--text-mid); margin-top: 0.4em; font-family: 'Space Mono', monospace; }
 
     /* === THE STEREO === */
     .stereo {
@@ -148,13 +162,13 @@
       font-size: 0.6em;
       letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: rgba(255,200,215,0.75);
+      color: rgba(200,220,215,0.7);
     }
     .stereo-brand-model {
       font-family: 'Space Mono', monospace;
       font-size: 0.55em;
       letter-spacing: 0.15em;
-      color: rgba(255,200,215,0.55);
+      color: rgba(200,220,215,0.45);
     }
 
     /* LCD Display */
@@ -307,7 +321,7 @@
       font-size: 0.6em;
       letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.8);
+      color: rgba(180,220,210,0.7);
       text-align: center;
       margin-bottom: 0.8em;
     }
@@ -440,9 +454,9 @@
     .roon-box-lg code { font-size: 0.85em; }
     .copy-btn {
       font-family: 'Space Mono', monospace;
-      background: rgba(103,232,249,0.12);
-      border: 1px solid rgba(103,232,249,0.3);
-      color: #67e8f9;
+      background: var(--copy-bg, rgba(103,232,249,0.12));
+      border: 1px solid var(--copy-border, rgba(103,232,249,0.3));
+      color: var(--copy-text, #67e8f9);
       padding: 0.3em 0.7em;
       border-radius: 4px;
       cursor: pointer;
