@@ -51,13 +51,13 @@
       font-size: 0.6em;
       letter-spacing: 0.4em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.35);
+      color: rgba(255,180,200,0.6);
     }
     .stereo-brand-model {
       font-family: 'Space Mono', monospace;
       font-size: 0.55em;
       letter-spacing: 0.15em;
-      color: rgba(255,180,200,0.2);
+      color: rgba(255,180,200,0.4);
     }
 
     /* LCD Display */
@@ -98,10 +98,10 @@
     }
     .lcd-label {
       font-family: 'Space Mono', monospace;
-      font-size: 0.55em;
+      font-size: 0.6em;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: rgba(103,232,249,0.4);
+      color: rgba(103,232,249,0.8);
     }
     .lcd-dot {
       width: 6px; height: 6px;
@@ -129,13 +129,14 @@
       font-family: 'Space Mono', monospace;
       font-size: 1.15em;
       font-weight: 700;
-      color: #67e8f9;
-      text-shadow: 0 0 12px rgba(103,232,249,0.5), 0 0 30px rgba(103,232,249,0.15);
-      animation: scroll-left 15s linear infinite;
+      color: #a5f3fc;
+      text-shadow: 0 0 8px rgba(103,232,249,0.7), 0 0 24px rgba(103,232,249,0.3);
+      animation: scroll-left 25s linear infinite;
       padding-left: 100%;
     }
+    .lcd-marquee:hover .lcd-marquee-inner { animation-play-state: paused; }
     .lcd-marquee-inner a { color: inherit; text-decoration: none; }
-    .lcd-marquee-inner a:hover { color: #a5f3fc; }
+    .lcd-marquee-inner a:hover { color: #fff; }
     @keyframes scroll-left {
       0%   { transform: translateX(0); }
       100% { transform: translateX(-100%); }
@@ -145,8 +146,8 @@
       display: flex;
       justify-content: space-between;
       font-family: 'Space Mono', monospace;
-      font-size: 0.6em;
-      color: rgba(103,232,249,0.35);
+      font-size: 0.65em;
+      color: rgba(103,232,249,0.7);
       margin-top: 0.4em;
       position: relative;
       z-index: 2;
@@ -191,7 +192,7 @@
       font-size: 0.6em;
       letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: rgba(255,180,200,0.4);
+      color: rgba(255,180,200,0.65);
       text-align: center;
       margin-bottom: 0.8em;
     }
@@ -217,12 +218,12 @@
       align-items: center;
       gap: 4px;
     }
-    .dial-mark-line { width: 1px; height: 12px; background: rgba(255,180,200,0.2); }
-    .dial-mark-line.tall { height: 18px; background: rgba(255,180,200,0.35); }
+    .dial-mark-line { width: 1px; height: 12px; background: rgba(255,180,200,0.3); }
+    .dial-mark-line.tall { height: 18px; background: rgba(255,180,200,0.5); }
     .dial-mark-num {
       font-family: 'Space Mono', monospace;
-      font-size: 0.5em;
-      color: rgba(255,180,200,0.3);
+      font-size: 0.55em;
+      color: rgba(255,180,200,0.55);
     }
     .dial-groove {
       position: relative;
@@ -390,6 +391,30 @@
         setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
       });
     }
+
+    // Move dial needle when a channel is clicked
+    document.addEventListener('DOMContentLoaded', () => {
+      const buttons = document.querySelectorAll('.ch-btn');
+      const needle = document.querySelector('.dial-needle');
+      const fill = document.querySelector('.dial-groove-fill');
+      const lcdChannel = document.querySelector('.lcd-channel-name');
+      const total = buttons.length;
+
+      buttons.forEach((btn, i) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          // Remove active from all, add to clicked
+          buttons.forEach(b => b.classList.remove('ch-active'));
+          btn.classList.add('ch-active');
+          // Move needle: spread positions across 5%-90%
+          const pct = 5 + (i / (total - 1)) * 85;
+          needle.style.left = pct + '%';
+          fill.style.width = pct + '%';
+          // Update LCD channel name
+          if (lcdChannel) lcdChannel.textContent = 'CH: ' + btn.textContent;
+        });
+      });
+    });
   </script>
 </head>
 <body>
@@ -424,7 +449,7 @@
           </span>
         </div>
         <div class="lcd-meta">
-          <span>CH: All</span>
+          <span class="lcd-channel-name">CH: All</span>
           <span>1 listener</span>
           <span>7 played</span>
         </div>
