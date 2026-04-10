@@ -1,0 +1,10 @@
+{
+  "host": "0.0.0.0",
+  "port": 8489,
+  "bitrate": "192k",
+  "format": "mp3",
+  "crossfade_seconds": 3,
+  "shuffle": true,
+  "poolsuite_api": "https://api.poolsidefm.workers.dev",
+  "playlist_filter": null
+}
